@@ -7,6 +7,7 @@ const ProfilePage = () => {
   const router = useRouter();
   const { user, profile, loading, error: authError } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
+  const isEditing = !!profile;
 
   useEffect(() => {
     console.log('ProfilePage mounted/updated:', { 
@@ -15,12 +16,13 @@ const ProfilePage = () => {
       loading, 
       authError,
       pathname: router.pathname,
-      isReady: router.isReady
+      isReady: router.isReady,
+      isEditing
     });
-  }, [user, profile, loading, authError, router.pathname, router.isReady]);
+  }, [user, profile, loading, authError, router.pathname, router.isReady, isEditing]);
 
   const handleProfileComplete = () => {
-    console.log('Profile completed, redirecting to dashboard:', {
+    console.log('Profile saved, redirecting to dashboard:', {
       role: profile?.role,
       userId: user?.id
     });
@@ -64,9 +66,19 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center text-blue-600 mb-8">
-          Complete Your Profile
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-blue-600">
+            {isEditing ? 'Edit Profile' : 'Complete Your Profile'}
+          </h1>
+          {isEditing && (
+            <button
+              onClick={() => router.back()}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center space-x-2"
+            >
+              <span>Back</span>
+            </button>
+          )}
+        </div>
         <div className="bg-white shadow rounded-lg p-6">
           {formError && (
             <div className="mb-4 p-4 bg-red-50 text-red-600 rounded">
@@ -75,7 +87,8 @@ const ProfilePage = () => {
           )}
           <ProfileForm
             user={user}
-            userType={user.user_metadata?.user_type || 'student'}
+            userType={profile?.role || user.user_metadata?.user_type || 'student'}
+            existingProfile={profile || undefined}
             onComplete={handleProfileComplete}
             onError={setFormError}
           />
