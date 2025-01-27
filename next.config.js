@@ -13,7 +13,10 @@ const nextConfig = {
   experimental: {
     turbotrace: {
       memoryLimit: 4000
-    }
+    },
+    // Enable more aggressive caching
+    incrementalCacheHandlerPath: require.resolve('./cache-handler.js'),
+    isrMemoryCacheSize: 0 // Disable ISR memory cache
   }
 }
 

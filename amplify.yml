@@ -6,7 +6,7 @@ frontend:
         - nvm use 18
         - node -v
         - npm -v
-        - npm ci
+        - npm c
     build:
       commands:
         - npm run build
@@ -14,7 +14,11 @@ frontend:
     baseDirectory: .next
     files:
       - '**/*'
+      - ../public/**/*
+      - ../package.json
   cache:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
+      - .next/server/**/*
+      - .next/static/**/*
