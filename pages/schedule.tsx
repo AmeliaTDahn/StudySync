@@ -30,6 +30,7 @@ const SchedulePage = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [selectedTutor, setSelectedTutor] = useState<Profile | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [startTime, setStartTime] = useState('');
@@ -74,7 +75,7 @@ const SchedulePage = () => {
       console.error('Error signing out:', error);
       setError('Failed to sign out');
     } else {
-      router.push('/');
+      router.replace('/signin');
     }
   };
 
@@ -82,6 +83,7 @@ const SchedulePage = () => {
     e.preventDefault();
     if (!user || !profile || !selectedTutor || !selectedSubject || !startTime || !endTime) {
       setError('Please fill in all required fields');
+      setIsSuccess(false);
       return;
     }
 
@@ -97,8 +99,17 @@ const SchedulePage = () => {
     if (meetingError) {
       console.error('Error scheduling meeting:', meetingError);
       setError('Failed to schedule meeting');
+      setIsSuccess(false);
       return;
     }
+
+    // Show success message
+    setError('Meeting scheduled successfully!');
+    setIsSuccess(true);
+    setTimeout(() => {
+      setError(null);
+      setIsSuccess(false);
+    }, 5000);
 
     // Clear form
     setSelectedTutor(null);
@@ -179,7 +190,11 @@ const SchedulePage = () => {
       
       <main className="max-w-7xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-4 p-4 text-red-700 bg-red-100 rounded-md">
+          <div className={`mb-4 p-4 rounded-md ${
+            isSuccess 
+              ? 'text-green-700 bg-green-100' 
+              : 'text-red-700 bg-red-100'
+          }`}>
             {error}
           </div>
         )}

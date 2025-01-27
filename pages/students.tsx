@@ -11,6 +11,7 @@ import {
 } from '../lib/supabase';
 import AddUserButton from '../components/add-user-button';
 import BackOnlyNav from '../components/BackOnlyNav';
+import { ProfileForm } from '../components/profile-form';
 
 const StudentsPage = () => {
   const router = useRouter();
@@ -22,6 +23,7 @@ const StudentsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [connectedStudents, setConnectedStudents] = useState<Profile[]>([]);
   const [showingConnected, setShowingConnected] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -62,23 +64,28 @@ const StudentsPage = () => {
   };
 
   const loadConnectedStudents = async (userId: string) => {
+    console.log('Loading connected students for tutor:', userId);
     try {
       const { data: connections, error: connectionsError } = await supabase
         .from('student_tutor_connections')
         .select('student_id, student_username')
         .eq('tutor_id', userId);
 
+      console.log('Connections query result:', { connections, connectionsError });
       if (connectionsError) throw connectionsError;
       
       if (connections && connections.length > 0) {
+        console.log('Found connections, fetching student profiles...');
         const { data: students, error: studentsError } = await supabase
           .from('profiles')
           .select('*')
           .in('user_id', connections.map(c => c.student_id));
 
+        console.log('Student profiles query result:', { students, studentsError });
         if (studentsError) throw studentsError;
         setConnectedStudents(students || []);
       } else {
+        console.log('No connections found');
         setConnectedStudents([]);
       }
     } catch (err) {
@@ -94,11 +101,23 @@ const StudentsPage = () => {
     setError(null);
 
     try {
+      // First get the IDs of students the tutor is already connected with
+      const { data: connections, error: connectionsError } = await supabase
+        .from('student_tutor_connections')
+        .select('student_id')
+        .eq('tutor_id', user?.id);
+
+      if (connectionsError) throw connectionsError;
+      
+      const connectedStudentIds = connections?.map(c => c.student_id) || [];
+
+      // Then search for students, excluding the connected ones
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'student')
-        .ilike('username', searchQuery ? `%${searchQuery}%` : '%');
+        .ilike('username', searchQuery ? `%${searchQuery}%` : '%')
+        .not('user_id', 'in', `(${connectedStudentIds.join(',')})`);
 
       if (error) throw error;
       setSearchResults(data || []);
@@ -134,6 +153,41 @@ const StudentsPage = () => {
       <BackOnlyNav title="Students" />
       
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Profile Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-xl font-semibold">Your Profile</h2>
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Edit
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-600"><strong>Username:</strong> {profile?.username}</p>
+              <p className="text-gray-600"><strong>Email:</strong> {user?.email}</p>
+              <p className="text-gray-600"><strong>Hourly Rate:</strong> ${profile?.hourly_rate}/hour</p>
+            </div>
+            <div>
+              <p className="text-gray-600"><strong>Specialties:</strong></p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {profile?.specialties?.map(subject => (
+                  <span key={subject} className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                    {subject}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {profile?.bio && (
+              <div className="col-span-2">
+                <p className="text-gray-600"><strong>Bio:</strong> {profile.bio}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
@@ -264,6 +318,31 @@ const StudentsPage = () => {
           </div>
         </div>
       </main>
+
+      {/* Profile Edit Modal */}
+      {showProfileModal && user && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Edit Profile</h2>
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <ProfileForm
+              user={user}
+              userType="student"
+              onComplete={() => {
+                setShowProfileModal(false);
+                loadUserProfile(user.id);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

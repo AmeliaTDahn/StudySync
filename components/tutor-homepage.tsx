@@ -177,19 +177,35 @@ const TutorHomepage = () => {
 
   const handleSubmitResponse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedTicket) return;
+    if (!user || !selectedTicket) {
+      console.error('Missing user or selected ticket:', { user: !!user, selectedTicket: !!selectedTicket });
+      setError('Please select a ticket first');
+      return;
+    }
 
-    const { error } = await createResponse({
-      ticket_id: selectedTicket.id,
-      tutor_id: user.id,
-      content: newResponse
+    console.log('Attempting to create response:', {
+      ticketId: selectedTicket.id,
+      userId: user.id,
+      userRole: 'tutor',
+      responseLength: newResponse.length
     });
 
-    if (error) {
-      console.error('Error creating response:', error);
+    const response = await createResponse(
+      selectedTicket.id,
+      user.id,
+      newResponse,
+      'tutor',
+      null // No parent response (not replying to another response)
+    );
+
+    if (response.error) {
+      console.error('Error creating response:', response.error);
+      setError(response.error.message || 'Failed to create response');
     } else {
+      console.log('Response created successfully');
       setNewResponse('');
       loadUserData();
+      setError('');
     }
   };
 

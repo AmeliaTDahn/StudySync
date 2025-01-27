@@ -96,11 +96,23 @@ const TutorsPage = () => {
     setError(null);
 
     try {
+      // First get the IDs of tutors the student is already connected with
+      const { data: connections, error: connectionsError } = await supabase
+        .from('student_tutor_connections')
+        .select('tutor_id')
+        .eq('student_id', user?.id);
+
+      if (connectionsError) throw connectionsError;
+      
+      const connectedTutorIds = connections?.map(c => c.tutor_id) || [];
+
+      // Then search for tutors, excluding the connected ones
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'tutor')
-        .ilike('username', searchQuery ? `%${searchQuery}%` : '%');
+        .ilike('username', searchQuery ? `%${searchQuery}%` : '%')
+        .not('user_id', 'in', `(${connectedTutorIds.join(',')})`);
 
       if (error) throw error;
       setSearchResults(data || []);

@@ -160,77 +160,119 @@ const StudentHomepage = () => {
 
   const handleNewTicketSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      setError('You must be logged in to create a ticket');
+      return;
+    }
     
     if (!newTicket.subject || !newTicket.topic || !newTicket.description) {
       setError('Please fill in all fields');
       return;
     }
 
-    const result = await createTicket(
-      user.id,
-      newTicket.subject,
-      newTicket.topic,
-      newTicket.description
-    );
+    try {
+      console.log('Creating ticket with data:', {
+        userId: user.id,
+        subject: newTicket.subject,
+        topic: newTicket.topic,
+        description: newTicket.description
+      });
 
-    if (result.error) {
-      console.error('Error creating ticket:', result.error);
-      setError('Failed to create ticket');
-      return;
-    }
+      const result = await createTicket(
+        user.id,
+        newTicket.subject,
+        newTicket.topic,
+        newTicket.description
+      );
 
-    // Reset form and close modal
-    setNewTicket({
-      subject: '' as Subject,
-      topic: '',
-      description: ''
-    });
-    setShowNewTicketModal(false);
-    setError('');
+      if (result.error) {
+        console.error('Error creating ticket:', result.error);
+        setError(result.error.message || 'Failed to create ticket');
+        return;
+      }
 
-    // Reload tickets
-    if (user) {
-      loadUserData(user.id);
+      if (!result.data) {
+        console.error('No data returned from createTicket');
+        setError('Failed to create ticket - no data returned');
+        return;
+      }
+
+      console.log('Ticket created successfully:', result.data);
+
+      // Reset form and close modal
+      setNewTicket({
+        subject: '' as Subject,
+        topic: '',
+        description: ''
+      });
+      setShowNewTicketModal(false);
+      setError('');
+
+      // Reload tickets
+      if (user) {
+        await loadUserData(user.id);
+      }
+    } catch (err) {
+      console.error('Unexpected error creating ticket:', err);
+      setError('An unexpected error occurred while creating the ticket');
     }
   };
 
   const handleResponseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedTicket || !newResponse.trim()) return;
-
-    const response = await createResponse(
-      selectedTicket.id,
-      user.id,
-      newResponse.trim(),
-      'student',
-      replyTo?.id
-    );
-
-    if (response.error) {
-      console.error('Error creating response:', response.error);
-      setError('Failed to send response');
+    setError(''); // Clear any existing errors
+    
+    if (!user) {
+      setError('You must be logged in to respond');
+      return;
+    }
+    
+    if (!selectedTicket) {
+      setError('No ticket selected');
+      return;
+    }
+    
+    if (!newResponse.trim()) {
+      setError('Response cannot be empty');
       return;
     }
 
-    // Update the selected ticket with the new response
-    const updatedTicket = {
-      ...selectedTicket,
-      responses: [...(selectedTicket.responses || []), response.data[0]],
-      last_response_at: new Date().toISOString()
-    };
-    setSelectedTicket(updatedTicket);
+    try {
+      const response = await createResponse(
+        selectedTicket.id,
+        user.id,
+        newResponse.trim(),
+        'student',
+        replyTo?.id
+      );
 
-    // Update the ticket in the tickets list
-    setTickets(prevTickets =>
-      prevTickets.map(ticket =>
-        ticket.id === selectedTicket.id ? updatedTicket : ticket
-      )
-    );
+      if (response.error) {
+        console.error('Error creating response:', response.error);
+        setError(response.error.message || 'Failed to send response');
+        return;
+      }
 
-    setNewResponse('');
-    setReplyTo(null);
-    setError('');
+      // Update the selected ticket with the new response
+      const updatedTicket = {
+        ...selectedTicket,
+        responses: [...(selectedTicket.responses || []), response.data[0]],
+        last_response_at: new Date().toISOString()
+      };
+      setSelectedTicket(updatedTicket);
+
+      // Update the ticket in the tickets list
+      setTickets(prevTickets =>
+        prevTickets.map(ticket =>
+          ticket.id === selectedTicket.id ? updatedTicket : ticket
+        )
+      );
+
+      setNewResponse('');
+      setReplyTo(null);
+    } catch (err) {
+      console.error('Unexpected error in handleResponseSubmit:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    }
   };
 
   const handleLogout = async () => {
@@ -239,7 +281,7 @@ const StudentHomepage = () => {
       console.error('Error signing out:', error);
       setError('Failed to sign out');
     } else {
-      router.push('/');
+      router.replace('/signin');
     }
   };
 

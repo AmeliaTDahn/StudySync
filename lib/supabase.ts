@@ -1,5 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database, Tables, Subject, UserType, Ticket, Response, TutorSubject, Profile, Message, Conversation, Meeting, MeetingStatus, StudyRoom, StudyRoomParticipant, StudyRoomMessage, ConnectionInvitation } from '../types/database';
+import type { 
+  Database, 
+  Subject, 
+  UserType, 
+  Ticket, 
+  Response, 
+  TutorSubject, 
+  Profile, 
+  Meeting, 
+  MeetingStatus, 
+  StudyRoom, 
+  StudyRoomParticipant, 
+  StudyRoomMessage, 
+  Message, 
+  Conversation, 
+  DatabaseMessage,
+  StudentTutorConnection,
+  ConnectionInvitation
+} from '../types/database';
 import { AVAILABLE_SUBJECTS, DB_SCHEMA } from '../types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,48 +27,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-console.log('Initializing Supabase client with URL:', supabaseUrl);
+// Ensure URL is properly formatted
+const formattedUrl = supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`;
+
+console.log('Initializing Supabase client with URL:', formattedUrl);
+console.log('Environment variables:', {
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+});
 
 // Initialize Supabase client
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(formattedUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: true,
     flowType: 'pkce',
-    storage: {
-      getItem: (key: string) => {
-        if (typeof window === 'undefined') return null;
-        try {
-          return window.localStorage.getItem(key);
-        } catch (e) {
-          console.error('Error reading from localStorage:', e);
-          return null;
-        }
-      },
-      setItem: (key: string, value: string) => {
-        if (typeof window === 'undefined') return;
-        try {
-          window.localStorage.setItem(key, value);
-        } catch (e) {
-          console.error('Error writing to localStorage:', e);
-        }
-      },
-      removeItem: (key: string) => {
-        if (typeof window === 'undefined') return;
-        try {
-          window.localStorage.removeItem(key);
-        } catch (e) {
-          console.error('Error removing from localStorage:', e);
-        }
-      }
-    }
+    debug: true
   },
   global: {
     headers: {
-      'X-Client-Info': '@supabase/supabase-js/2.48.1',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'X-Client-Info': '@supabase/supabase-js/2.38.4'
     }
   }
 });
@@ -59,38 +56,39 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 export const testConnection = async () => {
   try {
     console.log('Testing database connection...');
-    console.log('Using Supabase URL:', supabaseUrl);
     
     // First test auth connection
     const { data: authData, error: authError } = await supabase.auth.getSession();
     if (authError) {
       console.error('Auth connection test failed:', authError);
-      if (authError.message.includes('Failed to fetch')) {
-        console.error('Network error - check your Supabase URL and internet connection');
-      }
       return false;
     }
     console.log('Auth connection test passed');
 
-    // Then test database connection
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1)
-      .single();
+    // Then test database connection with retry
+    for (let i = 0; i < 3; i++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('count')
+          .limit(1)
+          .single();
 
-    if (error) {
-      console.error('Database connection test failed:', error);
-      if (error.code === 'PGRST301') {
-        console.error('This appears to be a permissions error. Please check RLS policies.');
-      } else if (error.message.includes('Failed to fetch')) {
-        console.error('Network error - check your Supabase URL and internet connection');
+        if (error) {
+          console.error(`Database connection attempt ${i + 1} failed:`, error);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+          continue;
+        }
+
+        console.log('Database connection test succeeded');
+        return true;
+      } catch (err) {
+        console.error(`Database connection attempt ${i + 1} failed with error:`, err);
+        if (i < 2) await new Promise(resolve => setTimeout(resolve, 1000));
       }
-      return false;
     }
 
-    console.log('Database connection test succeeded');
-    return true;
+    return false;
   } catch (err) {
     console.error('Unexpected error testing connection:', err);
     return false;
@@ -98,7 +96,7 @@ export const testConnection = async () => {
 };
 
 // Re-export types and constants
-export type { Subject, UserType, Ticket, Response, TutorSubject, Profile, Message, Conversation, Meeting, MeetingStatus, StudyRoom, StudyRoomParticipant, StudyRoomMessage };
+export type { Subject, UserType, Ticket, Response, TutorSubject, Profile, Meeting, MeetingStatus, StudyRoom, StudyRoomParticipant };
 export { AVAILABLE_SUBJECTS };
 
 // Auth functions
@@ -172,7 +170,7 @@ export const signUp = async (email: string, password: string, userType: UserType
       }
     }
 
-    throw new Error(`Failed to create profile after retries: ${profileError?.message || 'Unknown error'}`);
+    throw new Error(`Failed to create profile after retries: ${profileError instanceof Error ? profileError.message : 'Unknown error'}`);
     
   } catch (error) {
     console.error('Detailed signup error:', error);
@@ -181,7 +179,21 @@ export const signUp = async (email: string, password: string, userType: UserType
 };
 
 export const signOut = async () => {
-  return await supabase.auth.signOut();
+  try {
+    console.log('Starting sign out process...');
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Sign out error:', error);
+      return { error };
+    }
+    
+    console.log('Sign out successful');
+    return { error: null };
+  } catch (error) {
+    console.error('Unexpected error during sign out:', error);
+    return { error };
+  }
 };
 
 // Get current user type
@@ -242,38 +254,44 @@ export const checkAuthState = async () => {
 export const createTicket = async (studentId: string, subject: Subject, topic: string, description: string) => {
   console.log('Starting ticket creation with:', { studentId, subject, topic, description });
   
-  // Check auth status and role first
-  const { data: { user } } = await supabase.auth.getUser();
-  console.log('Current auth user:', user);
-  const userType = await getUserType();
-  console.log('User type:', userType);
-  
-  if (!user) {
-    console.error('No authenticated user found');
-    return { error: new Error('Not authenticated') };
-  }
-  
-  if (userType !== 'student') {
-    console.error('User is not a student');
-    return { error: new Error('Only students can create tickets') };
-  }
-  
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(studentId)) {
-    console.error('Invalid UUID format for studentId:', studentId);
-    return { error: new Error('Invalid user ID format') };
-  }
-  console.log('UUID validation passed');
-  
   try {
+    // Check auth status and role first
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('Current auth user:', user);
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      return { error: new Error(typeof authError === 'object' && authError !== null ? String(authError) : 'Authentication error') };
+    }
+    
+    if (!user) {
+      console.error('No authenticated user found');
+      return { error: new Error('Not authenticated') };
+    }
+
+    const userType = await getUserType();
+    console.log('User type:', userType);
+    
+    if (userType !== 'student') {
+      console.error('User is not a student');
+      return { error: new Error('Only students can create tickets') };
+    }
+    
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(studentId)) {
+      console.error('Invalid UUID format for studentId:', studentId);
+      return { error: new Error('Invalid user ID format') };
+    }
+    console.log('UUID validation passed');
+
     // First get the student's username
     const { data: profile, error: profileError } = await getProfile(studentId);
     console.log('Profile lookup result:', { profile, profileError });
     
     if (profileError) {
       console.error('Profile lookup error:', profileError);
-      return { error: profileError };
+      return { error: new Error(typeof profileError === 'object' && profileError !== null ? String(profileError) : 'Profile error') };
     }
     if (!profile) {
       console.error('No profile found for student ID:', studentId);
@@ -281,24 +299,27 @@ export const createTicket = async (studentId: string, subject: Subject, topic: s
     }
     console.log('Found profile:', profile);
 
+    // Validate subject is one of the allowed values
+    const validSubject = AVAILABLE_SUBJECTS.find(s => s === subject);
+    if (!validSubject) {
+      console.error('Invalid subject:', subject);
+      return { error: new Error('Invalid subject selected') };
+    }
+
     // Create the ticket
-    console.log('Attempting to insert ticket with data:', {
+    const ticketData = {
       student_id: studentId,
       student_username: profile.username,
-      subject,
+      subject: validSubject,
       topic,
-      description
-    });
+      description,
+      status: 'New'
+    };
+    console.log('Attempting to insert ticket with data:', ticketData);
     
     const result = await supabase
-      .from(DB_SCHEMA.tickets.tableName)
-      .insert([{
-        student_id: studentId,
-        student_username: profile.username,
-        subject,
-        topic,
-        description
-      }])
+      .from('tickets')
+      .insert([ticketData])
       .select()
       .single();
       
@@ -309,14 +330,17 @@ export const createTicket = async (studentId: string, subject: Subject, topic: s
         console.error('This appears to be a permissions error. Checking user role...');
         const userType = await getUserType();
         console.error('User type:', userType);
+        return { error: new Error('Permission denied: You do not have permission to create tickets') };
       }
+      return { error: new Error(typeof result.error === 'object' && result.error !== null ? String(result.error) : 'Failed to create ticket') };
     }
     
-    console.log('Insert result:', result);
+    console.log('Ticket created successfully:', result.data);
     return result;
   } catch (error) {
     console.error('Unexpected error during ticket creation:', error);
-    return { error: new Error('Unexpected error during ticket creation') };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { error: new Error('Unexpected error during ticket creation: ' + errorMessage) };
   }
 };
 
@@ -341,7 +365,75 @@ export const getStudentTickets = async (studentId: string) => {
 };
 
 export const getTutorTickets = async (tutorId: string) => {
-  return await supabase
+  console.log('Starting getTutorTickets with tutorId:', tutorId);
+
+  // First check auth status
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  console.log('Auth check:', { user: user?.id, error: authError });
+
+  if (authError) {
+    console.error('Auth error:', authError);
+    return { error: authError };
+  }
+
+  if (!user) {
+    console.error('No authenticated user');
+    return { data: [], error: new Error('Not authenticated') };
+  }
+
+  // Check the tutor's profile and subjects
+  const [profileResult, subjectsResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', tutorId)
+      .single(),
+    supabase
+      .from('tutor_subjects')
+      .select('subject')
+      .eq('tutor_id', tutorId)
+  ]);
+
+  console.log('Tutor profile check:', { 
+    profile: profileResult.data ? { 
+      id: profileResult.data.user_id, 
+      role: profileResult.data.role,
+      username: profileResult.data.username 
+    } : null, 
+    error: profileResult.error,
+    subjects: subjectsResult.data?.map(s => s.subject)
+  });
+
+  if (profileResult.error) {
+    console.error('Error fetching tutor profile:', profileResult.error);
+    return { error: profileResult.error };
+  }
+
+  if (!profileResult.data) {
+    console.error('No profile found for tutor:', tutorId);
+    return { data: [], error: null };
+  }
+
+  if (profileResult.data.role !== 'tutor') {
+    console.error('Profile is not a tutor:', profileResult.data.role);
+    return { data: [], error: new Error('Not a tutor profile') };
+  }
+
+  if (subjectsResult.error) {
+    console.error('Error fetching tutor subjects:', subjectsResult.error);
+    return { error: subjectsResult.error };
+  }
+
+  const tutorSubjects = subjectsResult.data?.map(s => s.subject) || [];
+  console.log('Tutor subjects:', tutorSubjects);
+
+  if (tutorSubjects.length === 0) {
+    console.log('Tutor has no subjects registered');
+    return { data: [], error: null };
+  }
+
+  // Get tickets for the tutor's subjects
+  const result = await supabase
     .from(DB_SCHEMA.tickets.tableName)
     .select(`
       *,
@@ -356,8 +448,22 @@ export const getTutorTickets = async (tutorId: string) => {
         parent_id
       )
     `)
+    .in('subject', tutorSubjects)
     .eq(DB_SCHEMA.tickets.columns.closed, false)
     .order(DB_SCHEMA.tickets.columns.created_at, { ascending: false });
+
+  console.log('Ticket query result:', {
+    success: !result.error,
+    count: result.data?.length || 0,
+    error: result.error,
+    firstTicket: result.data?.[0] ? {
+      id: result.data[0].id,
+      subject: result.data[0].subject,
+      student_id: result.data[0].student_id
+    } : null
+  });
+
+  return result;
 };
 
 export const closeTicket = async (ticketId: number) => {
@@ -375,27 +481,123 @@ export const createResponse = async (
   userRole: UserType,
   parentId?: number | null
 ) => {
-  // Get the user's profile
-  const profileResult = await getProfile(userId);
-  if (profileResult.error) return { error: profileResult.error };
-  if (!profileResult.data) return { error: new Error('User profile not found') };
+  console.log('Creating response:', { ticketId, userId, userRole, content: content.substring(0, 50) + '...', parentId });
+  
+  try {
+    // First verify the user's role matches what was passed
+    const actualUserRole = await getUserType();
+    console.log('Actual user role:', actualUserRole);
+    
+    if (!actualUserRole) {
+      console.error('Failed to get user role');
+      return { error: new Error('Could not verify user role') };
+    }
+    if (actualUserRole !== userRole) {
+      console.error(`Role mismatch: expected ${userRole}, got ${actualUserRole}`);
+      return { error: new Error(`Invalid role: expected ${userRole}`) };
+    }
 
-  // If it's a student response, verify they own the ticket
-  if (userRole === 'student') {
+    // Get the user's profile
+    const profileResult = await getProfile(userId);
+    console.log('Profile lookup result:', {
+      success: !profileResult.error,
+      profile: profileResult.data ? {
+        id: profileResult.data.user_id,
+        role: profileResult.data.role,
+        username: profileResult.data.username
+      } : null,
+      error: profileResult.error
+    });
+    
+    if (profileResult.error) {
+      console.error('Profile lookup error:', profileResult.error);
+      return { error: new Error(`Failed to get user profile: ${String(profileResult.error)}`) };
+    }
+    if (!profileResult.data) {
+      console.error('No profile found for user:', userId);
+      return { error: new Error('User profile not found') };
+    }
+
+    // Get the ticket details first
     const { data: ticket, error: ticketError } = await supabase
       .from(DB_SCHEMA.tickets.tableName)
-      .select('student_id')
+      .select('student_id, subject, status, closed')
       .eq(DB_SCHEMA.tickets.columns.id, ticketId)
       .single();
 
-    if (ticketError) return { error: ticketError };
-    if (!ticket) return { error: new Error('Ticket not found') };
-    if (ticket.student_id !== userId) return { error: new Error('Not authorized to respond to this ticket') };
-  }
+    console.log('Ticket lookup result:', { 
+      ticket: ticket ? {
+        id: ticketId,
+        studentId: ticket.student_id,
+        subject: ticket.subject,
+        status: ticket.status,
+        closed: ticket.closed
+      } : null, 
+      error: ticketError 
+    });
 
-  const response = await supabase
-    .from(DB_SCHEMA.responses.tableName)
-    .insert([{
+    if (ticketError) {
+      console.error('Ticket lookup error:', ticketError);
+      return { error: new Error(`Failed to find ticket: ${String(ticketError)}`) };
+    }
+    if (!ticket) {
+      console.error('No ticket found with ID:', ticketId);
+      return { error: new Error('Ticket not found') };
+    }
+    if (ticket.status === 'Closed' || ticket.closed) {
+      console.error('Attempt to respond to closed ticket:', ticketId);
+      return { error: new Error('Cannot respond to a closed ticket') };
+    }
+
+    // Check permissions based on role
+    if (userRole === 'student') {
+      console.log('Checking student permissions:', {
+        ticketStudentId: ticket.student_id,
+        userId,
+        match: ticket.student_id === userId
+      });
+      
+      if (ticket.student_id !== userId) {
+        console.error('Unauthorized response attempt:', { ticketId, userId, studentId: ticket.student_id });
+        return { error: new Error('Not authorized to respond to this ticket') };
+      }
+    } else if (userRole === 'tutor') {
+      // Verify tutor has the subject
+      console.log('Checking tutor subjects for:', { tutorId: userId, ticketSubject: ticket.subject });
+      
+      const { data: tutorSubjects, error: subjectsError } = await supabase
+        .from('tutor_subjects')
+        .select('subject')
+        .eq('tutor_id', userId);
+
+      console.log('Raw tutor subjects query result:', { tutorSubjects, error: subjectsError });
+
+      if (subjectsError) {
+        console.error('Error checking tutor subjects:', subjectsError);
+        return { error: new Error('Failed to verify tutor permissions') };
+      }
+
+      const hasSubject = tutorSubjects?.some(ts => {
+        console.log('Comparing subjects:', { 
+          tutorSubject: ts.subject, 
+          ticketSubject: ticket.subject,
+          matches: ts.subject === ticket.subject 
+        });
+        return ts.subject === ticket.subject;
+      });
+      
+      if (!hasSubject) {
+        console.error('Tutor does not have the required subject:', { 
+          tutorId: userId, 
+          tutorSubjects: tutorSubjects?.map(ts => ts.subject),
+          requiredSubject: ticket.subject,
+          availableSubjects: AVAILABLE_SUBJECTS
+        });
+        return { error: new Error(`You are not authorized to respond to ${ticket.subject} tickets`) };
+      }
+    }
+
+    const responseData = {
       ticket_id: ticketId,
       tutor_id: userRole === 'tutor' ? userId : null,
       tutor_username: userRole === 'tutor' ? profileResult.data.username : null,
@@ -403,18 +605,52 @@ export const createResponse = async (
       student_username: userRole === 'student' ? profileResult.data.username : null,
       content,
       parent_id: parentId || null
-    }])
-    .select();
+    };
 
-  if (response.error) return response;
+    console.log('Attempting to create response with data:', {
+      ...responseData,
+      content: content.length > 50 ? content.substring(0, 50) + '...' : content
+    });
 
-  // Update the ticket's last_response_at
-  await supabase
-    .from(DB_SCHEMA.tickets.tableName)
-    .update({ last_response_at: new Date().toISOString() })
-    .eq(DB_SCHEMA.tickets.columns.id, ticketId);
+    const response = await supabase
+      .from(DB_SCHEMA.responses.tableName)
+      .insert([responseData])
+      .select();
 
-  return response;
+    if (response.error) {
+      console.error('Response creation error:', response.error);
+      // Check if it's a permissions error
+      if (response.error.code === 'PGRST301') {
+        console.error('This appears to be a permissions error. Current auth state:', {
+          userRole: actualUserRole,
+          userId,
+          ticketOwner: ticket.student_id,
+          ticketSubject: ticket.subject
+        });
+        // Get current user type to help debug
+        const currentUserType = await getUserType();
+        console.log('Current user type:', currentUserType);
+      }
+      return { error: new Error(`Failed to create response: ${String(response.error)}`) };
+    }
+
+    // Update the ticket's last_response_at
+    const { error: updateError } = await supabase
+      .from(DB_SCHEMA.tickets.tableName)
+      .update({ last_response_at: new Date().toISOString() })
+      .eq(DB_SCHEMA.tickets.columns.id, ticketId);
+
+    if (updateError) {
+      console.error('Failed to update ticket timestamp:', updateError);
+      // Don't return error here as the response was created successfully
+    }
+
+    console.log('Response created successfully:', response.data?.[0]?.id);
+    return response;
+  } catch (error) {
+    console.error('Unexpected error in createResponse:', error);
+    return { error: new Error(`Unexpected error creating response: ${error instanceof Error ? error.message : String(error)}`) };
+  }
 };
 
 // Tutor subject functions
@@ -450,35 +686,85 @@ export const removeTutorSubject = async (tutorId: string, subject: Subject) => {
 };
 
 // Profile functions
-export const getProfile = async (userId: string) => {
-  return await supabase
-    .from(DB_SCHEMA.profiles.tableName)
-    .select('*')
-    .eq(DB_SCHEMA.profiles.columns.user_id, userId)
-    .single();
-};
+export async function getProfile(userId: string) {
+  console.log('Fetching profile for user:', userId);
+  try {
+    const { data, error, status } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();  // Use maybeSingle() instead of single()
 
-export async function createProfile(
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return { data: null, error };
+    }
+
+    // If no profile found, return null without error
+    if (!data) {
+      console.log('No profile found for user:', userId);
+      return { 
+        data: null, 
+        error: {
+          code: 'PGRST116',
+          message: 'Profile not found',
+          details: 'No profile exists for this user'
+        }
+      };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    console.error('Unexpected error in getProfile:', err);
+    return { 
+      data: null, 
+      error: {
+        message: 'Failed to fetch profile',
+        details: err instanceof Error ? err.message : 'Unknown error'
+      }
+    };
+  }
+}
+
+export const createProfile = async (
   user_id: string,
   username: string,
   email: string,
   role: UserType,
   data?: Partial<Profile>
-) {
-  const profileData = {
-    user_id,
-    username,
-    email,
-    role,
-    ...data
-  };
+) => {
+  console.log('Creating profile:', { user_id, username, email, role, data });
+  
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .insert([
+        {
+          user_id,
+          username,
+          email,
+          role,
+          hourly_rate: role === 'tutor' ? (data?.hourly_rate || 0) : null,
+          specialties: data?.specialties || [],
+          struggles: data?.struggles || [],
+          bio: data?.bio || null
+        }
+      ])
+      .select()
+      .single();
 
-  return await supabase
-    .from('profiles')
-    .insert([profileData])
-    .select()
-    .single();
-}
+    if (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
+
+    console.log('Profile created successfully:', profile);
+    return { data: profile, error: null };
+  } catch (error) {
+    console.error('Unexpected error creating profile:', error);
+    return { data: null, error };
+  }
+};
 
 export const updateProfile = async (
   userId: string,
@@ -503,10 +789,12 @@ export const updateProfile = async (
     // Get current tutor subjects
     const { data: currentSubjects } = await getTutorSubjects(userId);
     const currentSubjectSet = new Set((currentSubjects || []).map(s => s.subject));
-    const newSubjectSet = new Set(data.specialties);
+    const newSubjectSet = new Set(data.specialties.filter((s): s is Subject => 
+      AVAILABLE_SUBJECTS.includes(s as Subject)
+    ));
 
     // Subjects to add (in new set but not in current)
-    const subjectsToAdd = data.specialties.filter(s => !currentSubjectSet.has(s));
+    const subjectsToAdd = Array.from(newSubjectSet).filter(s => !currentSubjectSet.has(s));
     
     // Subjects to remove (in current but not in new)
     const subjectsToRemove = Array.from(currentSubjectSet).filter(s => !newSubjectSet.has(s));
@@ -849,9 +1137,18 @@ export async function getStudyRooms() {
 }
 
 export async function createStudyRoom(name: string, description: string | null) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: new Error('User not authenticated') };
+  }
+
   const { data, error } = await supabase
     .from('study_rooms')
-    .insert([{ name, description }])
+    .insert([{ 
+      name, 
+      description,
+      created_by: user.id
+    }])
     .select()
     .single();
 
@@ -892,25 +1189,23 @@ export async function leaveStudyRoom(roomId: number, userId: string) {
   return { error: null };
 }
 
-export async function getStudyRoomMessages(roomId: number) {
-  const { data, error } = await supabase
+export const getStudyRoomMessages = async (roomId: number) => {
+  return await supabase
     .from('study_room_messages')
     .select('*')
     .eq('room_id', roomId)
     .order('created_at', { ascending: true });
+};
 
-  if (error) {
-    console.error('Error fetching study room messages:', error);
-    return { data: null, error };
-  }
-
-  return { data, error: null };
-}
-
-export async function sendStudyRoomMessage(roomId: number, userId: string, username: string, content: string) {
-  const { data, error } = await supabase
+export const sendStudyRoomMessage = async (roomId: number, userId: string, username: string, content: string): Promise<DatabaseMessage> => {
+  const { data: message, error } = await supabase
     .from('study_room_messages')
-    .insert([{ room_id: roomId, user_id: userId, username, content }])
+    .insert({
+      room_id: roomId,
+      user_id: userId,
+      username,
+      content
+    })
     .select()
     .single();
 
@@ -919,12 +1214,12 @@ export async function sendStudyRoomMessage(roomId: number, userId: string, usern
     return { data: null, error };
   }
 
-  return { data, error: null };
-}
+  return { data: message, error: null };
+};
 
-export function subscribeToStudyRoomMessages(roomId: number, callback: (message: StudyRoomMessage) => void) {
-  const subscription = supabase
-    .channel(`study_room_${roomId}`)
+export const subscribeToStudyRoomMessages = (roomId: number, onMessage: (message: StudyRoomMessage) => void) => {
+  return supabase
+    .channel(`study_room_messages:${roomId}`)
     .on(
       'postgres_changes',
       {
@@ -934,15 +1229,30 @@ export function subscribeToStudyRoomMessages(roomId: number, callback: (message:
         filter: `room_id=eq.${roomId}`
       },
       (payload) => {
-        callback(payload.new as StudyRoomMessage);
+        onMessage(payload.new as StudyRoomMessage);
       }
     )
     .subscribe();
+};
 
-  return subscription;
-}
+export const subscribeToStudyRoomParticipants = (roomId: number, onParticipantChange: (participant: StudyRoomParticipant) => void) => {
+  return supabase
+    .channel(`study_room_participants:${roomId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'study_room_participants',
+        filter: `room_id=eq.${roomId}`
+      },
+      (payload) => {
+        onParticipantChange(payload.new as StudyRoomParticipant);
+      }
+    )
+    .subscribe();
+};
 
-export const subscribeToStudyRoomParticipants = undefined;
 export const inviteToStudyRoom = undefined;
 export const acceptStudyRoomInvitation = undefined;
 
@@ -989,14 +1299,26 @@ export const updateInvitationStatus = async (
     .eq('id', invitationId);
 };
 
-// Function to create connection after invitation is accepted
-export const createConnectionFromInvitation = async (invitation: ConnectionInvitation) => {
-  return await supabase
-    .from('student_tutor_connections')
-    .insert([{
-      student_id: invitation.from_user_id,
-      tutor_id: invitation.to_user_id,
-      student_username: invitation.from_username,
-      tutor_username: invitation.to_username
-    }]);
+export const updateTicketStatus = async (ticketId: string, status: string) => {
+  try {
+    const { data, error } = await supabase
+      .from(DB_SCHEMA.tickets.tableName)
+      .update({ 
+        [DB_SCHEMA.tickets.columns.status]: status,
+        [DB_SCHEMA.tickets.columns.closed]: status === 'Closed',
+        [DB_SCHEMA.tickets.columns.updated_at]: new Date().toISOString()
+      })
+      .eq(DB_SCHEMA.tickets.columns.id, ticketId)
+      .select();
+
+    if (error) {
+      console.error('Error updating ticket status:', error);
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in updateTicketStatus:', error);
+    return { data: null, error };
+  }
 }; 

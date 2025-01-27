@@ -122,7 +122,7 @@ const TutorHomepage = () => {
       console.error('Error signing out:', error);
       setError('Failed to sign out');
     } else {
-      router.push('/');
+      router.replace('/signin');
     }
   };
 

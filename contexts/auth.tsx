@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/router';
 import { supabase, getProfile, testConnection, type Profile } from '../lib/supabase';
+import { PostgrestError } from '@supabase/postgrest-js';
 
 interface AuthContextType {
   user: User | null;
@@ -29,59 +30,152 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Handle initial session and auth state changes
-  useEffect(() => {
-    let mounted = true;
-
-    async function initializeAuth() {
-      try {
-        // Clear any stale auth state
-        if (typeof window !== 'undefined') {
-          const staleKeys = Object.keys(localStorage).filter(key => 
-            key.startsWith('sb-') || 
-            key.startsWith('supabase.auth.')
-          );
-          staleKeys.forEach(key => localStorage.removeItem(key));
-        }
-
-        // Test database connection first
-        const isConnected = await testConnection();
-        if (!mounted) return;
-        
-        if (!isConnected) {
-          setError('Unable to connect to the database. Please check your configuration.');
-          setLoading(false);
-          setInitialized(true);
-          return;
-        }
-
-        // Get initial session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        
-        if (!mounted) return;
-
-        if (session?.user) {
-          setUser(session.user);
-          try {
-            const { data: profileData, error: profileError } = await getProfile(session.user.id);
-            if (!mounted) return;
-            
-            if (profileError) {
-              console.error('Error fetching profile:', profileError);
-              setError('Unable to fetch user profile. Please try again.');
-            } else {
-              setProfile(profileData);
-            }
-          } catch (e) {
-            console.error('Unexpected error fetching profile:', e);
-            setError('An unexpected error occurred while fetching your profile.');
+  // Fetch profile function
+  const fetchProfile = useCallback(async (userId: string) => {
+    console.log('Fetching profile for user:', userId);
+    try {
+      const { data: profileData, error: profileError } = await getProfile(userId);
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        if (profileError.code === 'PGRST116') {
+          // Profile doesn't exist yet, this is expected for new users
+          console.log('Profile not found, user needs to create one');
+          setProfile(null);
+          setError(null);
+          if (router.pathname !== '/profile') {
+            console.log('Redirecting to profile creation page');
+            router.replace('/profile');
           }
+        } else {
+          console.error('Unexpected error fetching profile:', profileError);
+          setError('Unable to fetch user profile');
+          setProfile(null);
+        }
+      } else if (profileData) {
+        console.log('Profile loaded:', profileData);
+        setProfile(profileData);
+        setError(null);
+        
+        // If we're on the profile page but have a profile, redirect to dashboard
+        if (router.pathname === '/profile') {
+          console.log('Profile exists, redirecting to dashboard');
+          router.replace(profileData.role === 'student' ? '/student' : '/tutor');
+        }
+      } else {
+        console.log('No profile data returned');
+        setProfile(null);
+        setError(null);
+        if (router.pathname !== '/profile') {
+          console.log('Redirecting to profile creation page');
+          router.replace('/profile');
+        }
+      }
+    } catch (err) {
+      console.error('Unexpected error in fetchProfile:', err);
+      setError('Unable to fetch user profile');
+      setProfile(null);
+    }
+  }, [router]);
+
+  // Handle routing based on auth state
+  useEffect(() => {
+    if (!initialized || loading) {
+      console.log('Skipping route change, not initialized or loading:', { initialized, loading });
+      return;
+    }
+
+    const path = router.pathname;
+    console.log('Handling route change:', { user, profile, loading, initialized, error, path });
+    
+    // Don't redirect on these paths
+    if (['/signin', '/', '/auth/callback'].includes(path)) {
+      console.log('No redirect needed for path:', path);
+      return;
+    }
+    
+    if (!user) {
+      console.log('No authenticated user, redirecting to signin');
+      router.replace('/signin');
+      return;
+    }
+
+    // If we have a user but no profile, redirect to profile setup
+    // unless we're already on the profile page
+    if (!profile && path !== '/profile') {
+      console.log('No profile found, redirecting to profile setup');
+      router.replace('/profile');
+      return;
+    }
+
+    // If we have both user and profile, ensure we're not stuck on profile page
+    if (profile && path === '/profile') {
+      console.log('Profile exists, redirecting to dashboard');
+      router.replace(profile.role === 'student' ? '/student' : '/tutor');
+      return;
+    }
+  }, [user, profile, initialized, loading, router.pathname]);
+
+  // Subscribe to auth state changes
+  useEffect(() => {
+    console.log('Setting up auth subscription...');
+    let mounted = true;
+    
+    const {
+      data: { subscription: authSubscription }
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (!mounted) return;
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        setError(null);
+        return;
+      }
+
+      if (session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setError(null);
+      }
+    });
+
+    // Initialize auth state
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth state...');
+        
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('Auth session result:', { session, error: sessionError });
+        
+        if (!mounted) return;
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError('Failed to initialize authentication.');
+          setUser(null);
+          setProfile(null);
+        } else if (session?.user) {
+          console.log('Session found for user:', session.user.id);
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        } else {
+          console.log('No session found');
+          setUser(null);
+          setProfile(null);
+          setError(null);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('Error in initializeAuth:', error);
         if (mounted) {
-          setError('An unexpected error occurred. Please refresh the page.');
+          setError('Failed to initialize authentication.');
+          setUser(null);
+          setProfile(null);
         }
       } finally {
         if (mounted) {
@@ -89,78 +183,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setInitialized(true);
         }
       }
-    }
+    };
 
     initializeAuth();
 
-    // Set up auth listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      console.log('Auth state changed:', event, session?.user?.id);
-
-      setLoading(true);
-      setError(null);
-      
-      if (session?.user) {
-        setUser(session.user);
-        const { data: profileData, error: profileError } = await getProfile(session.user.id);
-        if (!mounted) return;
-        
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setError('Unable to fetch user profile. Please try again.');
-        } else {
-          setProfile(profileData);
-        }
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      
-      setLoading(false);
-    });
-
     return () => {
+      console.log('Cleaning up auth subscription...');
       mounted = false;
-      subscription?.unsubscribe();
+      authSubscription.unsubscribe();
     };
-  }, [router]);
-
-  // Handle routing based on auth state
-  useEffect(() => {
-    if (!initialized) return;
-
-    const path = router.pathname;
-    const isAuthPage = path === '/' || path === '/auth/callback';
-    
-    if (!loading) {
-      if (error) {
-        // Don't redirect if there's an error, let the error be displayed
-        return;
-      }
-      
-      if (!user && !isAuthPage) {
-        router.push('/');
-      } else if (user && !profile && path !== '/profile') {
-        router.push('/profile');
-      } else if (user && profile && isAuthPage) {
-        router.push(profile.role === 'student' ? '/student' : '/tutor');
-      }
-    }
-  }, [user, profile, loading, initialized, error, router.pathname]);
-
-  const value = {
-    user,
-    profile,
-    loading,
-    initialized,
-    error
-  };
+  }, [fetchProfile]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, profile, loading, initialized, error }}>
       {children}
     </AuthContext.Provider>
   );

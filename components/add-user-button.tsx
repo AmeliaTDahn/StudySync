@@ -14,11 +14,13 @@ export default function AddUserButton({ currentUserType, onUserAdded, targetUser
 
   const handleAddUser = async () => {
     try {
+      console.log('Starting handleAddUser:', { currentUserType, targetUserId });
       setLoading(true);
       setError(null);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+      console.log('Current user:', user.id);
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -26,6 +28,7 @@ export default function AddUserButton({ currentUserType, onUserAdded, targetUser
         .eq('user_id', user.id)
         .single();
 
+      console.log('Current user profile result:', { profile, error: profileError });
       if (profileError) throw profileError;
       if (!profile) throw new Error('Profile not found');
 
@@ -35,6 +38,7 @@ export default function AddUserButton({ currentUserType, onUserAdded, targetUser
         .eq('user_id', targetUserId)
         .single();
 
+      console.log('Target profile result:', { targetProfile, error: targetProfileError });
       if (targetProfileError) throw targetProfileError;
       if (!targetProfile) throw new Error('Target profile not found');
 
@@ -46,6 +50,7 @@ export default function AddUserButton({ currentUserType, onUserAdded, targetUser
         targetProfile.username
       );
 
+      console.log('Send invitation result:', { error: invitationError });
       if (invitationError) throw invitationError;
 
       setSuccess(true);

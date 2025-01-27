@@ -38,9 +38,10 @@ export default function MeetingCalendar({ userId, userType }: MeetingCalendarPro
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    console.log('Setting up subscription for', userType, userId);
     loadMeetings();
     const subscription = supabase
-      .channel('meetings')
+      .channel(`meetings:${userId}`)
       .on(
         'postgres_changes',
         {
@@ -51,19 +52,64 @@ export default function MeetingCalendar({ userId, userType }: MeetingCalendarPro
             ? `student_id=eq.${userId}`
             : `tutor_id=eq.${userId}`
         },
-        () => {
-          loadMeetings();
+        (payload) => {
+          console.log('Meeting update received:', payload);
+          if (payload.eventType === 'INSERT') {
+            console.log('Handling INSERT event');
+            const newMeeting = payload.new as Meeting;
+            const mappedMeeting = {
+              ...newMeeting,
+              id: newMeeting.id.toString(),
+              title: userType === 'student' 
+                ? `Meeting with ${newMeeting.tutor_username}`
+                : `Meeting with ${newMeeting.student_username}`,
+              start: newMeeting.start_time,
+              end: newMeeting.end_time,
+              backgroundColor: statusColors[newMeeting.status as MeetingStatus],
+              borderColor: statusColors[newMeeting.status as MeetingStatus],
+              tutor: { username: newMeeting.tutor_username },
+              student: { username: newMeeting.student_username },
+            };
+            console.log('Adding new meeting to state:', mappedMeeting);
+            setMeetings(prev => [...prev, mappedMeeting]);
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('Handling UPDATE event');
+            const updatedMeeting = payload.new as Meeting;
+            setMeetings(prev => prev.map(meeting => 
+              meeting.id === updatedMeeting.id.toString()
+                ? {
+                    ...updatedMeeting,
+                    id: updatedMeeting.id.toString(),
+                    title: userType === 'student' 
+                      ? `Meeting with ${updatedMeeting.tutor_username}`
+                      : `Meeting with ${updatedMeeting.student_username}`,
+                    start: updatedMeeting.start_time,
+                    end: updatedMeeting.end_time,
+                    backgroundColor: statusColors[updatedMeeting.status as MeetingStatus],
+                    borderColor: statusColors[updatedMeeting.status as MeetingStatus],
+                    tutor: { username: updatedMeeting.tutor_username },
+                    student: { username: updatedMeeting.student_username },
+                  }
+                : meeting
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            console.log('Handling DELETE event');
+            const deletedMeeting = payload.old as Meeting;
+            setMeetings(prev => prev.filter(meeting => meeting.id !== deletedMeeting.id.toString()));
+          }
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up subscription');
       subscription.unsubscribe();
     };
   }, [userId, userType]);
 
   const loadMeetings = async () => {
     try {
+      console.log('Loading meetings for', userType, userId);
       const { data, error } = await supabase
         .from('meetings')
         .select('*')
@@ -75,20 +121,26 @@ export default function MeetingCalendar({ userId, userType }: MeetingCalendarPro
 
       if (error) throw error;
 
-      const calendarMeetings = (data || []).map(meeting => ({
-        ...meeting,
-        id: meeting.id.toString(),
-        title: userType === 'student' 
-          ? `Meeting with ${meeting.tutor_username}`
-          : `Meeting with ${meeting.student_username}`,
-        start: meeting.start_time,
-        end: meeting.end_time,
-        backgroundColor: statusColors[meeting.status as MeetingStatus],
-        borderColor: statusColors[meeting.status as MeetingStatus],
-        tutor: { username: meeting.tutor_username },
-        student: { username: meeting.student_username },
-      }));
+      console.log('Raw meetings data:', data);
+      const calendarMeetings = (data || []).map(meeting => {
+        const mappedMeeting = {
+          ...meeting,
+          id: meeting.id.toString(),
+          title: userType === 'student' 
+            ? `Meeting with ${meeting.tutor_username}`
+            : `Meeting with ${meeting.student_username}`,
+          start: meeting.start_time,
+          end: meeting.end_time,
+          backgroundColor: statusColors[meeting.status as MeetingStatus],
+          borderColor: statusColors[meeting.status as MeetingStatus],
+          tutor: { username: meeting.tutor_username },
+          student: { username: meeting.student_username },
+        };
+        console.log('Mapped calendar meeting:', mappedMeeting);
+        return mappedMeeting;
+      });
 
+      console.log('Setting meetings state:', calendarMeetings);
       setMeetings(calendarMeetings);
     } catch (err) {
       console.error('Error loading meetings:', err);

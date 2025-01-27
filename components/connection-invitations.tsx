@@ -3,8 +3,7 @@ import { User } from '@supabase/supabase-js';
 import { type ConnectionInvitation } from '../types/database';
 import {
   getReceivedInvitations,
-  updateInvitationStatus,
-  createConnectionFromInvitation
+  updateInvitationStatus
 } from '../lib/supabase';
 
 interface ConnectionInvitationsProps {
@@ -23,13 +22,17 @@ export default function ConnectionInvitations({ user, onInvitationHandled }: Con
 
   const loadInvitations = async () => {
     try {
+      console.log('Loading invitations for user:', user.id);
       setLoading(true);
       setError(null);
       
       const { data, error: invitationsError } = await getReceivedInvitations(user.id);
+      console.log('Received invitations result:', { data, error: invitationsError });
+      
       if (invitationsError) throw invitationsError;
       
       setInvitations(data || []);
+      console.log('Set invitations:', data || []);
     } catch (err: any) {
       console.error('Error loading invitations:', err);
       setError(err.message || 'Failed to load invitations');
@@ -40,6 +43,7 @@ export default function ConnectionInvitations({ user, onInvitationHandled }: Con
 
   const handleInvitation = async (invitation: ConnectionInvitation, accept: boolean) => {
     try {
+      console.log('Handling invitation:', { invitation, accept });
       setError(null);
       
       // Update invitation status
@@ -47,13 +51,9 @@ export default function ConnectionInvitations({ user, onInvitationHandled }: Con
         invitation.id,
         accept ? 'accepted' : 'rejected'
       );
+      console.log('Update invitation status result:', { error: updateError });
+      
       if (updateError) throw updateError;
-
-      if (accept) {
-        // Create the connection
-        const { error: connectionError } = await createConnectionFromInvitation(invitation);
-        if (connectionError) throw connectionError;
-      }
 
       // Remove the invitation from the list
       setInvitations(invitations.filter(inv => inv.id !== invitation.id));

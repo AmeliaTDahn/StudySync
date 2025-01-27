@@ -18,68 +18,37 @@ import {
   type Profile
 } from '../lib/supabase';
 import BackOnlyNav from '../components/BackOnlyNav';
+import { useAuth } from '../contexts/auth';
 
 type UserWithUsername = User & { username: string };
 
 const StudyRoomsPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<UserWithUsername | null>(null);
+  const { user } = useAuth();
   const [studyRooms, setStudyRooms] = useState<StudyRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<StudyRoom | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomDescription, setNewRoomDescription] = useState('');
   const [messages, setMessages] = useState<StudyRoomMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showNewRoomModal, setShowNewRoomModal] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: '', description: '' });
-  const [error, setError] = useState<string>('');
   const [showOnlyJoined, setShowOnlyJoined] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const [showParticipants, setShowParticipants] = useState(false);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get user's profile to get their username
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', user.id)
-          .single();
+    if (!user) {
+      router.replace('/signin');
+      return;
+    }
 
-        if (profile) {
-          setUser({ ...user, username: profile.username });
-          loadStudyRooms();
-        } else {
-          router.push('/signin');
-        }
-      } else {
-        router.push('/signin');
-      }
-    };
-
-    loadInitialData();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/signin');
-      } else if (session?.user) {
-        // Get user's profile to get their username
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (profile) {
-          setUser({ ...session.user, username: profile.username });
-          loadStudyRooms();
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    loadStudyRooms();
+  }, [user, router]);
 
   useEffect(() => {
     return () => {
@@ -91,12 +60,15 @@ const StudyRoomsPage = () => {
   }, []);
 
   const loadStudyRooms = async () => {
+    setLoading(true);
     const { data, error } = await getStudyRooms();
     if (error) {
       setError('Failed to load study rooms');
+      setLoading(false);
       return;
     }
     setStudyRooms(data || []);
+    setLoading(false);
   };
 
   const handleRoomSelect = async (room: StudyRoom) => {
@@ -146,89 +118,48 @@ const StudyRoomsPage = () => {
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !user.username) return;
+    if (!user) return;
 
-    if (!newRoom.name.trim()) {
-      setError('Room name is required');
+    const { data, error } = await createStudyRoom(newRoomName, newRoomDescription || null);
+    if (error) {
+      setError('Failed to create study room');
       return;
     }
 
-    try {
-      const { data, error } = await createStudyRoom(
-        newRoom.name.trim(),
-        newRoom.description.trim() || null
-      );
+    if (data) {
+      await joinStudyRoom(data.id, user.id, user.email || 'Anonymous');
+      await loadStudyRooms();
+      setShowCreateForm(false);
+      setNewRoomName('');
+      setNewRoomDescription('');
+    }
+  };
 
-      if (error) throw error;
+  const handleLeaveRoom = async (roomId: number) => {
+    if (!user) return;
 
-      // Join the room after creating it
-      if (data) {
-        const { error: joinError } = await joinStudyRoom(data.id, user.id, user.username);
-        if (joinError) throw joinError;
+    const { error } = await leaveStudyRoom(roomId, user.id);
+    if (error) {
+      setError('Failed to leave study room');
+      return;
+    }
 
-        await loadStudyRooms();
-        setShowNewRoomModal(false);
-        setNewRoom({ name: '', description: '' });
-        
-        // Get the updated room data with participants
-        const updatedRoom = (await getStudyRooms()).data?.find(room => room.id === data.id);
-        if (updatedRoom) {
-          handleRoomSelect(updatedRoom);
-        }
-      }
-    } catch (error) {
-      setError('Failed to create or join room');
-      console.error('Error creating/joining room:', error);
+    await loadStudyRooms();
+    if (selectedRoom?.id === roomId) {
+      setSelectedRoom(null);
     }
   };
 
   const handleJoinRoom = async (room: StudyRoom) => {
-    if (!user || !user.username) return;
-
-    const { error } = await joinStudyRoom(room.id, user.id, user.username);
-    if (error) {
-      setError('Failed to join room');
-      return;
-    }
-    
-    await loadStudyRooms();
-    handleRoomSelect(room);
-  };
-
-  const handleLeaveRoom = async (room: StudyRoom) => {
     if (!user) return;
 
-    const { error } = await leaveStudyRoom(room.id, user.id);
+    const { error } = await joinStudyRoom(room.id, user.id, user.email || 'Anonymous');
     if (error) {
-      setError('Failed to leave room');
+      setError('Failed to join study room');
       return;
     }
 
-    if (selectedRoom?.id === room.id) {
-      setSelectedRoom(null);
-      setMessages([]);
-    }
-
-    loadStudyRooms();
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !user.username || !selectedRoom || !newMessage.trim()) return;
-
-    const { error } = await sendStudyRoomMessage(
-      selectedRoom.id,
-      user.id,
-      user.username,
-      newMessage.trim()
-    );
-
-    if (error) {
-      setError('Failed to send message');
-      return;
-    }
-
-    setNewMessage('');
+    await loadStudyRooms();
   };
 
   const scrollToBottom = () => {
@@ -239,9 +170,11 @@ const StudyRoomsPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  const isParticipant = selectedRoom?.study_room_participants?.some(
-    (p: StudyRoomParticipant) => user && p.user_id === user.id
-  );
+  const isUserInRoom = (room: StudyRoom) => {
+    return room.study_room_participants?.some(
+      (participant: StudyRoomParticipant) => participant.user_id === user?.id
+    );
+  };
 
   const handleStartPrivateChat = async (otherUserId: string, otherUsername: string) => {
     if (!user || !user.username) return;
@@ -271,6 +204,10 @@ const StudyRoomsPage = () => {
     }
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <BackOnlyNav title="Study Rooms" />
@@ -288,11 +225,11 @@ const StudyRoomsPage = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Study Rooms</h2>
               <button
-                onClick={() => setShowNewRoomModal(true)}
+                onClick={() => setShowCreateForm(!showCreateForm)}
                 className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"
               >
                 <Plus className="w-4 h-4" />
-                <span>New Room</span>
+                <span>{showCreateForm ? 'Cancel' : 'Create New Room'}</span>
               </button>
             </div>
             <div className="mb-4">
@@ -358,7 +295,7 @@ const StudyRoomsPage = () => {
                         <div onClick={(e) => e.stopPropagation()}>
                           {isRoomParticipant ? (
                             <button
-                              onClick={() => handleLeaveRoom(room)}
+                              onClick={() => handleLeaveRoom(room.id)}
                               className="text-red-600 hover:text-red-800 text-sm"
                             >
                               Leave
@@ -395,7 +332,7 @@ const StudyRoomsPage = () => {
                       <p className="text-gray-600">{selectedRoom.description}</p>
                     )}
                   </div>
-                  {isParticipant && (
+                  {isUserInRoom(selectedRoom) && (
                     <div className="relative">
                       <button
                         onClick={() => setShowParticipants(!showParticipants)}
@@ -444,7 +381,7 @@ const StudyRoomsPage = () => {
                   )}
                 </div>
 
-                {isParticipant ? (
+                {isUserInRoom(selectedRoom) ? (
                   <>
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto mb-4 space-y-4">
@@ -476,7 +413,7 @@ const StudyRoomsPage = () => {
                     </div>
 
                     {/* Message Input */}
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(e); }} className="flex gap-2">
                       <input
                         type="text"
                         value={newMessage}
@@ -517,13 +454,13 @@ const StudyRoomsPage = () => {
       </main>
 
       {/* Create Room Modal */}
-      {showNewRoomModal && (
+      {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Create New Room</h2>
               <button
-                onClick={() => setShowNewRoomModal(false)}
+                onClick={() => setShowCreateForm(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <X className="w-6 h-6" />
@@ -536,8 +473,8 @@ const StudyRoomsPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={newRoom.name}
-                  onChange={(e) => setNewRoom(prev => ({ ...prev, name: e.target.value }))}
+                  value={newRoomName}
+                  onChange={(e) => setNewRoomName(e.target.value)}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter room name"
                 />
@@ -547,8 +484,8 @@ const StudyRoomsPage = () => {
                   Description (optional)
                 </label>
                 <textarea
-                  value={newRoom.description}
-                  onChange={(e) => setNewRoom(prev => ({ ...prev, description: e.target.value }))}
+                  value={newRoomDescription}
+                  onChange={(e) => setNewRoomDescription(e.target.value)}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter room description"
                   rows={3}
