@@ -11,8 +11,18 @@ import {
   type Meeting,
   type Subject,
   type UserType,
-  AVAILABLE_SUBJECTS
+  AVAILABLE_SUBJECTS,
+  getProfile,
+  isValidSubject
 } from '../lib/supabase';
+import dynamic from 'next/dynamic';
+import BackOnlyNav from '../components/BackOnlyNav';
+
+// Dynamically import the MeetingCalendar component with no SSR
+const MeetingCalendar = dynamic(
+  () => import('../components/meeting-calendar'),
+  { ssr: false }
+);
 
 const SchedulePage = () => {
   const router = useRouter();
@@ -30,61 +40,43 @@ const SchedulePage = () => {
   const [isLoadingTutors, setIsLoadingTutors] = useState(false);
 
   useEffect(() => {
-    // Check authentication and load user data
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         router.push('/');
       } else if (session) {
         setUser(session.user);
-        
-        // Get user type
-        const userType = session.user.user_metadata.user_type as UserType;
-        setUserType(userType);
-
-        // Load profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        if (profileData) {
-          setProfile(profileData);
-        }
-
-        // Load meetings
-        const { data: meetingsData } = await getUserMeetings(session.user.id, userType);
-        if (meetingsData) {
-          setMeetings(meetingsData);
-        }
-
-        // Subscribe to meeting updates
-        const meetingSubscription = subscribeToMeetings(
-          session.user.id,
-          userType,
-          (updatedMeeting) => {
-            setMeetings(prevMeetings => {
-              const index = prevMeetings.findIndex(m => m.id === updatedMeeting.id);
-              if (index >= 0) {
-                const newMeetings = [...prevMeetings];
-                newMeetings[index] = updatedMeeting;
-                return newMeetings;
-              }
-              return [...prevMeetings, updatedMeeting];
-            });
-          }
-        );
-
-        return () => {
-          if (meetingSubscription) {
-            supabase.removeChannel(meetingSubscription);
-          }
-        };
+        loadUserData(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, []);
+
+  const loadUserData = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await getProfile(userId);
+      if (profileError) throw profileError;
+      if (!profileData) {
+        router.push('/profile');
+        return;
+      }
+      setProfile(profileData);
+      setUserType(profileData.role);
+    } catch (err) {
+      console.error('Error loading profile:', err);
+      setError('Failed to load user profile');
+    }
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+      setError('Failed to sign out');
+    } else {
+      router.push('/');
+    }
+  };
 
   const handleScheduleMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +88,7 @@ const SchedulePage = () => {
     const { error: meetingError } = await requestMeeting(
       user.id,
       selectedTutor.user_id,
-      selectedSubject,
+      selectedSubject as Subject,
       startTime,
       endTime,
       notes
@@ -154,30 +146,37 @@ const SchedulePage = () => {
     }
   };
 
-  const handleSubjectChange = (subject: Subject) => {
-    setSelectedSubject(subject);
-    setSelectedTutor(null);
-    if (subject) {
-      loadTutorsForSubject(subject);
-    } else {
+  const handleSubjectChange = (value: string) => {
+    if (value === '') {
+      setSelectedSubject(null);
       setTutors([]);
+      setSelectedTutor(null);
+      return;
+    }
+
+    if (isValidSubject(value)) {
+      setSelectedSubject(value);
+      loadTutorsForSubject(value);
+    } else {
+      setError('Invalid subject selected');
     }
   };
 
+  if (!user || !profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">Schedule Meeting</h1>
-          <button
-            onClick={handleBackToDashboard}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </nav>
-
+      <BackOnlyNav title="Schedule" />
+      
       <main className="max-w-7xl mx-auto px-4 py-8">
         {error && (
           <div className="mb-4 p-4 text-red-700 bg-red-100 rounded-md">
@@ -185,182 +184,126 @@ const SchedulePage = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Schedule Meeting Form */}
-          {userType === 'student' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Schedule New Meeting</h2>
-              <form onSubmit={handleScheduleMeeting} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Subject
-                  </label>
-                  <select
-                    value={selectedSubject || ''}
-                    onChange={(e) => handleSubjectChange(e.target.value as Subject)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="">Select a subject</option>
-                    {AVAILABLE_SUBJECTS.map((subject) => (
-                      <option key={subject} value={subject}>
-                        {subject}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedSubject && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Meeting Request Form (for students only) */}
+          {profile.role === 'student' && (
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold mb-4">Request Meeting</h2>
+                <form onSubmit={handleScheduleMeeting} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Select Tutor
+                      Subject
                     </label>
-                    {isLoadingTutors ? (
-                      <div className="text-center py-4 text-gray-500">
-                        Loading tutors...
-                      </div>
-                    ) : tutors.length > 0 ? (
-                      <div className="mt-1 space-y-2">
-                        {tutors.map((tutor) => (
-                          <div
-                            key={tutor.user_id}
-                            className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                              selectedTutor?.user_id === tutor.user_id
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-blue-300'
-                            }`}
-                            onClick={() => setSelectedTutor(tutor)}
-                          >
-                            <div className="font-medium">{tutor.username}</div>
-                            <div className="text-sm text-gray-500">
-                              Rate: ${tutor.hourly_rate}/hour
-                            </div>
-                            {tutor.bio && (
-                              <div className="text-sm text-gray-600 mt-1">
-                                {tutor.bio}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-gray-500">
-                        No tutors available for this subject
-                      </div>
-                    )}
+                    <select
+                      value={selectedSubject || ''}
+                      onChange={(e) => handleSubjectChange(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                      <option value="">Select a subject</option>
+                      {AVAILABLE_SUBJECTS.map((subject) => (
+                        <option key={subject} value={subject}>
+                          {subject}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Start Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
+                  {selectedSubject && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Select Tutor
+                      </label>
+                      {isLoadingTutors ? (
+                        <div className="text-center py-4 text-gray-500">
+                          Loading tutors...
+                        </div>
+                      ) : tutors.length > 0 ? (
+                        <div className="mt-1 space-y-2">
+                          {tutors.map((tutor) => (
+                            <div
+                              key={tutor.user_id}
+                              className={`
+                                p-3 rounded-md border cursor-pointer
+                                ${selectedTutor?.user_id === tutor.user_id
+                                  ? 'border-blue-500 bg-blue-50'
+                                  : 'border-gray-300 hover:border-blue-500'
+                                }
+                              `}
+                              onClick={() => setSelectedTutor(tutor)}
+                            >
+                              <div className="font-medium">{tutor.username}</div>
+                              <div className="text-sm text-gray-500">
+                                Rate: ${tutor.hourly_rate}/hour
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          No tutors available for this subject
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    End Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Start Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Notes
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Add any additional notes..."
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      End Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  Schedule Meeting
-                </button>
-              </form>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Notes (Optional)
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Schedule Meeting
+                  </button>
+                </form>
+              </div>
             </div>
           )}
 
-          {/* Meetings List */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Your Meetings</h2>
-            <div className="space-y-4">
-              {meetings.map((meeting) => (
-                <div
-                  key={meeting.id}
-                  className="border rounded-lg p-4 space-y-2"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">
-                        {userType === 'student'
-                          ? `Meeting with ${meeting.tutor_username}`
-                          : `Meeting with ${meeting.student_username}`}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        Subject: {meeting.subject}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Time: {new Date(meeting.start_time).toLocaleString()} -{' '}
-                        {new Date(meeting.end_time).toLocaleString()}
-                      </p>
-                      {meeting.notes && (
-                        <p className="text-sm text-gray-500">
-                          Notes: {meeting.notes}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-sm rounded-full ${
-                        meeting.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : meeting.status === 'accepted'
-                          ? 'bg-green-100 text-green-800'
-                          : meeting.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : meeting.status === 'completed'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {meeting.status}
-                    </span>
-                  </div>
-
-                  {userType === 'tutor' && meeting.status === 'pending' && (
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => handleUpdateStatus(meeting.id, 'accepted')}
-                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleUpdateStatus(meeting.id, 'rejected')}
-                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* Calendar View */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Your Meetings</h2>
+              {user && profile && (
+                <MeetingCalendar
+                  userId={user.id}
+                  userType={profile.role}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -369,4 +312,4 @@ const SchedulePage = () => {
   );
 };
 
-export default SchedulePage; 
+export default SchedulePage;

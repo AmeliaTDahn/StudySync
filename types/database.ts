@@ -26,8 +26,14 @@ export interface Message {
 
 export interface Conversation {
   id: number;
+  created_by: string;
   created_at: string;
   updated_at: string;
+  conversation_participants?: {
+    user_id: string;
+    username: string;
+  }[];
+  messages?: Message[];
 }
 
 export type MeetingStatus = 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
@@ -48,29 +54,26 @@ export interface Meeting {
 }
 
 export interface StudyRoom {
-  id: string;
+  id: number;
   name: string;
-  subject: Subject;
   description: string | null;
   created_at: string;
   updated_at: string;
-  created_by: string;
-  is_private: boolean;
   study_room_participants?: StudyRoomParticipant[];
 }
 
 export interface StudyRoomParticipant {
-  room_id: string;
+  room_id: number;
   user_id: string;
   username: string;
   joined_at: string;
 }
 
 export interface StudyRoomMessage {
-  id: string;
-  room_id: string;
-  sender_id: string;
-  sender_username: string;
+  id: number;
+  room_id: number;
+  user_id: string;
+  username: string;
   content: string;
   created_at: string;
 }
@@ -116,6 +119,27 @@ export interface Ticket {
 export interface TutorSubject {
   tutor_id: string;
   subject: Subject;
+}
+
+export interface StudentTutorConnection {
+  id: number;
+  student_id: string;
+  tutor_id: string;
+  student_username: string;
+  tutor_username: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConnectionInvitation {
+  id: number;
+  from_user_id: string;
+  to_user_id: string;
+  from_username: string;
+  to_username: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
 }
 
 // Define the database schema
@@ -175,7 +199,9 @@ export interface Database {
       };
       conversations: {
         Row: Conversation;
-        Insert: Omit<Conversation, 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<Conversation, 'id' | 'created_at' | 'updated_at'> & {
+          created_by?: string;
+        };
         Update: Partial<Conversation>;
       };
       conversation_participants: {
@@ -224,6 +250,11 @@ export interface Database {
         Row: StudyRoomInvitation;
         Insert: Omit<StudyRoomInvitation, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<StudyRoomInvitation>;
+      };
+      student_tutor_connections: {
+        Row: StudentTutorConnection;
+        Insert: Omit<StudentTutorConnection, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<StudentTutorConnection>;
       };
     };
   };
@@ -289,6 +320,7 @@ export const DB_SCHEMA = {
     tableName: 'conversations',
     columns: {
       id: 'id',
+      created_by: 'created_by',
       created_at: 'created_at',
       updated_at: 'updated_at'
     }
@@ -369,6 +401,18 @@ export const DB_SCHEMA = {
       room_id: 'room_id',
       invitee_id: 'invitee_id',
       status: 'status',
+      created_at: 'created_at',
+      updated_at: 'updated_at'
+    }
+  },
+  student_tutor_connections: {
+    tableName: 'student_tutor_connections',
+    columns: {
+      id: 'id',
+      student_id: 'student_id',
+      tutor_id: 'tutor_id',
+      student_username: 'student_username',
+      tutor_username: 'tutor_username',
       created_at: 'created_at',
       updated_at: 'updated_at'
     }

@@ -1,61 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { supabase, getUserType } from '../lib/supabase';
+import { useAuth } from '../contexts/auth';
 import { ProfileForm } from '../components/profile-form';
-import type { UserType } from '../lib/supabase';
 
 const ProfilePage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [userType, setUserType] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      // Get current session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/');
-        return;
-      }
-
-      // Get user type
-      const type = await getUserType();
-      if (!type) {
-        router.push('/');
-        return;
-      }
-
-      setUser(session.user);
-      setUserType(type);
-    } catch (error) {
-      console.error('Error checking user:', error);
-      router.push('/');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user, profile, loading, error } = useAuth();
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleProfileComplete = () => {
-    // Redirect to appropriate homepage
-    router.push(userType === 'student' ? '/student' : '/tutor');
+    router.push(profile?.role === 'student' ? '/student' : '/tutor');
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-xl font-semibold text-gray-600">Loading...</div>
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (!user || !userType) {
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-xl font-semibold text-red-600 mb-4">{error}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return null;
   }
 
@@ -67,12 +51,17 @@ const ProfilePage = () => {
         </h1>
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-6">
-            {userType === 'student' ? 'Student Profile' : 'Tutor Profile'}
+            Complete Your Profile
           </h2>
+          {formError && (
+            <div className="mb-4 p-4 bg-red-50 text-red-600 rounded">
+              {formError}
+            </div>
+          )}
           <ProfileForm
             user={user}
-            userType={userType}
             onComplete={handleProfileComplete}
+            onError={setFormError}
           />
         </div>
       </div>

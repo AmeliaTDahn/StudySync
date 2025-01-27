@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { signIn, signUp, type UserType } from '../lib/supabase';
 import { useAuth } from '../contexts/auth';
-import { supabase } from '../lib/supabase';
 
 const SignInPage = () => {
   const router = useRouter();
@@ -14,31 +13,12 @@ const SignInPage = () => {
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Only redirect if we have a user and their profile
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Get user profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (profile) {
-          // Redirect to appropriate dashboard
-          router.push(profile.role === 'student' ? '/student' : '/tutor');
-        } else {
-          // Redirect to profile creation if no profile exists
-          router.push('/profile');
-        }
-      } else {
-        // Redirect to sign in page if not authenticated
-        router.push('/signin');
-      }
-    };
-    checkUser();
-  }, [router]);
+    if (user && profile) {
+      router.push(profile.role === 'student' ? '/student' : '/tutor');
+    }
+  }, [user, profile, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +42,15 @@ const SignInPage = () => {
     }
   };
 
-  // Always render the sign-in form unless we're confirmed to be authenticated
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -180,6 +168,6 @@ const SignInPage = () => {
       </div>
     </div>
   );
-}
+};
 
 export default SignInPage; 

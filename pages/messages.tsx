@@ -1,308 +1,151 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
-import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { 
+import { User } from '@supabase/supabase-js';
+import { Plus, X, Search } from 'lucide-react';
+import {
   supabase,
-  searchUsers,
   getUserConversations,
   createOrGetConversation,
+  getConversationMessages,
   sendMessage,
   subscribeToMessages,
-  subscribeToConversations,
-  type Profile,
+  searchUsers,
   type Message,
-  type UserType
+  type Conversation,
+  type Profile
 } from '../lib/supabase';
+import BackOnlyNav from '../components/BackOnlyNav';
+
+type UserWithUsername = User & { username: string };
 
 const MessagesPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<UserWithUsername | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [error, setError] = useState<string>('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<any>(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [searchRole, setSearchRole] = useState<UserType | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const loadUserData = useCallback(async (userId: string) => {
-    try {
-      // Check if user is authenticated
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        router.push('/');
-        return;
-      }
-
-      // Load conversations
-      const { data: conversationsData, error: conversationsError } = await getUserConversations(userId);
-      if (conversationsError) {
-        console.error('Error loading conversations:', conversationsError);
-        setError('Failed to load conversations');
-        return;
-      }
-      setConversations(conversationsData || []);
-
-      // Load profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-      
-      if (profileError) {
-        console.error('Error loading profile:', profileError);
-        setError('Failed to load profile');
-        return;
-      }
-
-      if (profileData) {
-        setProfile(profileData);
-      } else {
-        setError('Profile not found');
-      }
-    } catch (err) {
-      console.error('Error in loadUserData:', err);
-      setError('Failed to load user data');
-    }
-  }, [router]);
-
-  const handleBackToDashboard = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const userType = user?.user_metadata?.user_type;
-    if (userType) {
-      router.push(userType === 'student' ? '/student' : '/tutor');
-    } else {
-      router.push('/');
-    }
-  };
 
   useEffect(() => {
-    // Check authentication status
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+    const loadInitialData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get user's profile to get their username
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile) {
+          setUser({ ...user, username: profile.username });
+          loadConversations();
+        } else {
+          router.push('/signin');
+        }
+      } else {
+        router.push('/signin');
+      }
+    };
+
+    loadInitialData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
-        router.push('/');
-      } else if (session) {
-        setUser(session.user);
-        await loadUserData(session.user.id);
+        router.push('/signin');
+      } else if (session?.user) {
+        // Get user's profile to get their username
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profile) {
+          setUser({ ...session.user, username: profile.username });
+          loadConversations();
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router, loadUserData]);
+  }, []);
 
-  // Add new useEffect to handle conversation from URL
-  useEffect(() => {
-    const conversationId = router.query.conversation;
-    if (conversationId && conversations.length > 0) {
-      const targetConversation = conversations.find(
-        (conv: any) => conv.id === parseInt(conversationId as string)
-      );
-      if (targetConversation) {
-        setSelectedConversation(targetConversation);
-        // Scroll chat into view on mobile
-        if (window.innerWidth < 768) {
-          const chatArea = document.querySelector('.md\\:col-span-2');
-          chatArea?.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    }
-  }, [router.query.conversation, conversations]);
-
-  useEffect(() => {
-    // Scroll to bottom when messages change
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedConversation?.messages]);
-
-  useEffect(() => {
-    let messageSubscription: any;
-    let conversationSubscription: any;
-    
-    if (selectedConversation) {
-      // Subscribe to new messages
-      messageSubscription = subscribeToMessages(selectedConversation.id, (newMessage) => {
-        setSelectedConversation((prev: any) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            messages: [...(prev.messages || []), newMessage]
-          };
-        });
-        
-        // Also update the conversation in the list
-        setConversations(prevConversations => 
-          prevConversations.map(conv => 
-            conv.id === selectedConversation.id
-              ? {
-                  ...conv,
-                  messages: [...(conv.messages || []), newMessage]
-                }
-              : conv
-          )
-        );
-      });
-    }
-
-    if (user) {
-      // Subscribe to conversation updates
-      conversationSubscription = subscribeToConversations(user.id, async (updatedConversation) => {
-        // Fetch the full conversation data when it's updated
-        const { data: conversationsData } = await getUserConversations(user.id);
-        if (conversationsData) {
-          setConversations(conversationsData);
-          // If this is the selected conversation, update it
-          if (selectedConversation?.id === updatedConversation.id) {
-            const updatedFullConversation = conversationsData.find(
-              (conv: any) => conv.id === updatedConversation.id
-            );
-            if (updatedFullConversation) {
-              setSelectedConversation(updatedFullConversation);
-            }
-          }
-        }
-      });
-    }
-
-    return () => {
-      if (messageSubscription) {
-        supabase.removeChannel(messageSubscription);
-      }
-      if (conversationSubscription) {
-        supabase.removeChannel(conversationSubscription);
-      }
-    };
-  }, [selectedConversation?.id, user?.id]);
-
-  const handleSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    setError(null);
-
-    try {
-      const { data, error } = await searchUsers(query.trim(), searchRole || undefined);
-      if (error) {
-        console.error('Error searching users:', error);
-        setError('Failed to search users');
-        return;
-      }
-      setSearchResults(data || []);
-    } catch (err) {
-      console.error('Error searching users:', err);
-      setError('Failed to search users');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [searchRole, setSearchResults, setIsSearching, setError, searchUsers, searchQuery, supabase]);
-
-  // Debounced search
-  const handleSearchInput = (value: string) => {
-    setSearchQuery(value);
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      handleSearch(value);
-    }, 300);
-  };
-
-  // Update search when role changes
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      handleSearch(searchQuery);
-    }
-  }, [searchRole, handleSearch, searchQuery]);
-
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+      // Cleanup subscription on component unmount
+      if (messageSubscriptionRef.current) {
+        messageSubscriptionRef.current.unsubscribe();
       }
     };
   }, []);
 
-  const handleStartConversation = async (otherUser: Profile) => {
-    if (!user || !profile) return;
+  const loadConversations = async () => {
+    const { data, error } = await getUserConversations(user?.id || '');
+    if (error) {
+      setError('Failed to load conversations');
+      return;
+    }
+    setConversations(data || []);
+  };
+
+  const handleConversationSelect = async (conversation: Conversation) => {
+    // Cleanup previous subscription if exists
+    if (messageSubscriptionRef.current) {
+      messageSubscriptionRef.current.unsubscribe();
+      messageSubscriptionRef.current = null;
+    }
+
+    setSelectedConversation(conversation);
+    setMessages([]); // Clear messages while loading
 
     try {
-      const { data: conversationId, error } = await createOrGetConversation(
-        user.id,
-        profile.username,
-        otherUser.user_id,
-        otherUser.username
-      );
-
-      if (error) {
-        console.error('Error creating conversation:', error);
-        setError('Failed to start conversation');
-        return;
+      // Get the latest conversation data
+      const { data: conversations } = await getUserConversations(user?.id || '');
+      const updatedConversation = conversations?.find(r => r.id === conversation.id);
+      if (updatedConversation) {
+        setSelectedConversation(updatedConversation);
       }
 
-      if (!conversationId) {
-        console.error('No conversation ID returned');
-        setError('Failed to start conversation');
-        return;
-      }
+      // Load messages
+      const { data, error } = await getConversationMessages(conversation.id);
+      if (error) throw error;
+      
+      setMessages(data || []);
+      scrollToBottom();
 
-      // Refresh conversations and find the new/existing conversation
-      const { data: conversationsData, error: loadError } = await getUserConversations(user.id);
-      if (loadError) {
-        console.error('Error loading conversations:', loadError);
-        setError('Failed to load conversations');
-        return;
-      }
+      // Subscribe to new messages
+      const subscription = subscribeToMessages(conversation.id, (message) => {
+        setMessages(prev => [...prev, message]);
+        scrollToBottom();
+      });
 
-      if (conversationsData) {
-        setConversations(conversationsData);
-        // Find and select the conversation
-        const targetConversation = conversationsData.find(
-          (conv: any) => conv.id === conversationId
-        );
-        if (targetConversation) {
-          setSelectedConversation(targetConversation);
-          // Clear search
-          setSearchQuery('');
-          setSearchResults([]);
-          // Scroll chat into view on mobile
-          if (window.innerWidth < 768) {
-            const chatArea = document.querySelector('.md\\:col-span-2');
-            chatArea?.scrollIntoView({ behavior: 'smooth' });
-          }
-          // Scroll to message input
-          const messageInput = document.querySelector('input[placeholder="Type a message..."]');
-          messageInput?.focus();
-        } else {
-          console.error('Could not find conversation with ID:', conversationId);
-          setError('Failed to open conversation');
-        }
-      }
-    } catch (err) {
-      console.error('Error in handleStartConversation:', err);
-      setError('Failed to start conversation');
+      messageSubscriptionRef.current = subscription;
+    } catch (error) {
+      setError('Failed to load messages');
+      console.error('Error loading messages:', error);
     }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !profile || !selectedConversation || !newMessage.trim()) return;
+    if (!user || !user.username || !selectedConversation || !newMessage.trim()) return;
 
     const { error } = await sendMessage(
       selectedConversation.id,
       user.id,
-      profile.username,
+      user.username,
       newMessage.trim()
     );
 
     if (error) {
-      console.error('Error sending message:', error);
       setError('Failed to send message');
       return;
     }
@@ -310,21 +153,83 @@ const MessagesPage = () => {
     setNewMessage('');
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const otherParticipant = selectedConversation?.conversation_participants?.find(
+    p => p.user_id !== user?.id
+  );
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const { data, error } = await searchUsers(query);
+      if (error) throw error;
+      
+      // Filter out the current user from results
+      const filteredResults = (data || []).filter(profile => profile.user_id !== user?.id);
+      setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setError('Failed to search users');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleStartChat = async (otherUser: Profile) => {
+    if (!user || !user.username) return;
+
+    try {
+      const { data: conversationId, error } = await createOrGetConversation(
+        user.id,
+        user.username,
+        otherUser.user_id,
+        otherUser.username
+      );
+
+      if (error) {
+        setError('Failed to start chat');
+        return;
+      }
+
+      if (!conversationId) {
+        setError('Failed to start chat');
+        return;
+      }
+
+      // Close modal and reset search
+      setShowNewChatModal(false);
+      setSearchQuery('');
+      setSearchResults([]);
+
+      // Refresh conversations and select the new one
+      await loadConversations();
+      const updatedConversations = await getUserConversations(user.id);
+      const newConversation = updatedConversations.data?.find(c => c.id === conversationId);
+      if (newConversation) {
+        handleConversationSelect(newConversation);
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      setError('Failed to start chat');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">Messages</h1>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleBackToDashboard}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
-      </nav>
+      <BackOnlyNav title="Messages" />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {error && (
@@ -334,109 +239,73 @@ const MessagesPage = () => {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left sidebar - Conversations list */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="mb-4">
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchInput(e.target.value)}
-                  placeholder="Search users..."
-                  className="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <select
-                  value={searchRole || ''}
-                  onChange={(e) => {
-                    setSearchRole(e.target.value as UserType || null);
-                    if (searchQuery.trim()) {
-                      handleSearch(searchQuery);
-                    }
-                  }}
-                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All</option>
-                  <option value="student">Students</option>
-                  <option value="tutor">Tutors</option>
-                </select>
-              </div>
-              {/* Search Results */}
-              {isSearching ? (
-                <div className="text-center py-4 text-gray-500">
-                  Searching...
-                </div>
-              ) : searchResults.length > 0 ? (
-                <div className="border-t pt-2">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Search Results ({searchResults.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {searchResults.map((result) => (
-                      <button
-                        key={result.user_id}
-                        onClick={() => handleStartConversation(result)}
-                        className="w-full text-left p-2 hover:bg-gray-50 rounded flex justify-between items-center group"
-                      >
-                        <span className="font-medium text-gray-900">{result.username}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">{result.role}</span>
-                          <span className="text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                            Start Chat →
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : searchQuery.trim() && !isSearching ? (
-                <div className="text-center py-4 text-gray-500">
-                  No users found
-                </div>
-              ) : null}
+          {/* Conversations List */}
+          <div className="md:col-span-1 bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Chats</h2>
+              <button
+                onClick={() => setShowNewChatModal(true)}
+                className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Chat</span>
+              </button>
             </div>
-
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold mb-4">Conversations</h2>
-              {conversations.map((conversation) => {
-                const otherParticipant = conversation.conversation_participants.find(
-                  (p: any) => p.user_id !== user?.id
+            <div className="space-y-4">
+              {conversations.map(conversation => {
+                const otherUser = conversation.conversation_participants?.find(
+                  p => p.user_id !== user?.id
                 );
+                
                 return (
-                  <button
+                  <div
                     key={conversation.id}
-                    onClick={() => setSelectedConversation(conversation)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    onClick={() => handleConversationSelect(conversation)}
+                    className={`p-4 rounded-lg border transition-colors cursor-pointer ${
                       selectedConversation?.id === conversation.id
-                        ? 'bg-blue-50 border-blue-200'
-                        : 'hover:bg-gray-50'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
                     }`}
                   >
-                    <div className="font-medium">{otherParticipant?.username}</div>
-                    <div className="text-sm text-gray-500">
-                      {conversation.messages?.[conversation.messages.length - 1]?.content?.substring(0, 30)}...
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{otherUser?.username || 'Unknown User'}</h3>
+                        {conversation.messages && conversation.messages.length > 0 && (
+                          <p className="text-sm text-gray-600">
+                            {conversation.messages[conversation.messages.length - 1].content}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {conversation.messages?.length || 0} messages
+                        </p>
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
+              {conversations.length === 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  No conversations available. Start one to begin chatting!
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right side - Chat area */}
-          <div className="md:col-span-2">
+          {/* Chat Area */}
+          <div className="md:col-span-2 bg-white rounded-lg shadow p-6 flex flex-col h-[calc(100vh-12rem)]">
             {selectedConversation ? (
-              <div className="bg-white rounded-lg shadow h-[600px] flex flex-col">
-                {/* Chat header */}
-                <div className="p-4 border-b">
-                  <h2 className="text-lg font-semibold">
-                    {selectedConversation.conversation_participants.find(
-                      (p: any) => p.user_id !== user?.id
-                    )?.username}
-                  </h2>
+              <>
+                <div className="flex justify-between items-center mb-4 pb-4 border-b">
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      {otherParticipant?.username || 'Unknown User'}
+                    </h2>
+                  </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {selectedConversation.messages?.map((message: Message) => (
+                <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+                  {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${
@@ -463,34 +332,100 @@ const MessagesPage = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message input */}
-                <div className="p-4 border-t">
-                  <form onSubmit={handleSendMessage} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!newMessage.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Send
-                    </button>
-                  </form>
-                </div>
-              </div>
+                {/* Message Input */}
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newMessage.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send
+                  </button>
+                </form>
+              </>
             ) : (
-              <div className="bg-white rounded-lg shadow h-[600px] flex items-center justify-center text-gray-500">
-                Select a conversation or start a new one
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                Select a conversation to start chatting
               </div>
             )}
           </div>
         </div>
       </main>
+
+      {/* New Chat Modal */}
+      {showNewChatModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Start New Chat</h2>
+              <button
+                onClick={() => {
+                  setShowNewChatModal(false);
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Search users..."
+                  className="w-full p-2 pl-10 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <Search className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" />
+              </div>
+            </div>
+
+            <div className="max-h-60 overflow-y-auto">
+              {isSearching ? (
+                <div className="text-center text-gray-600 py-4">
+                  Searching...
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="space-y-2">
+                  {searchResults.map((profile) => (
+                    <div
+                      key={profile.user_id}
+                      className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                      onClick={() => handleStartChat(profile)}
+                    >
+                      <div>
+                        <div className="font-medium">{profile.username}</div>
+                        <div className="text-sm text-gray-500">{profile.role}</div>
+                      </div>
+                      <button className="text-blue-600 hover:text-blue-800 text-sm">
+                        Start Chat
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : searchQuery ? (
+                <div className="text-center text-gray-600 py-4">
+                  No users found
+                </div>
+              ) : (
+                <div className="text-center text-gray-600 py-4">
+                  Search for users to start a chat
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

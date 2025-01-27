@@ -1,21 +1,23 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/auth';
 
 export default function AuthCallback() {
   const router = useRouter();
+  const { user, profile, loading } = useAuth();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        router.push('/profile');
-      }
-    });
+    if (loading) return;
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [router]);
+    if (!user) {
+      router.push('/');
+    } else if (!profile) {
+      router.push('/profile');
+    } else {
+      router.push(profile.role === 'student' ? '/student' : '/tutor');
+    }
+  }, [user, profile, loading, router]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

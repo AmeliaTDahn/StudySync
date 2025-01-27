@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database, Subject, UserType, Ticket, Response, TutorSubject, Profile, Message, Conversation, Meeting, MeetingStatus, StudyRoom, StudyRoomParticipant, StudyRoomMessage } from '../types/database';
+import type { Database, Tables, Subject, UserType, Ticket, Response, TutorSubject, Profile, Message, Conversation, Meeting, MeetingStatus, StudyRoom, StudyRoomParticipant, StudyRoomMessage, ConnectionInvitation } from '../types/database';
 import { AVAILABLE_SUBJECTS, DB_SCHEMA } from '../types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,20 +9,93 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+console.log('Initializing Supabase client with URL:', supabaseUrl);
+
 // Initialize Supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
+    detectSessionInUrl: false,
+    flowType: 'pkce',
+    storage: {
+      getItem: (key: string) => {
+        if (typeof window === 'undefined') return null;
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          console.error('Error reading from localStorage:', e);
+          return null;
+        }
+      },
+      setItem: (key: string, value: string) => {
+        if (typeof window === 'undefined') return;
+        try {
+          window.localStorage.setItem(key, value);
+        } catch (e) {
+          console.error('Error writing to localStorage:', e);
+        }
+      },
+      removeItem: (key: string) => {
+        if (typeof window === 'undefined') return;
+        try {
+          window.localStorage.removeItem(key);
+        } catch (e) {
+          console.error('Error removing from localStorage:', e);
+        }
+      }
+    }
   },
   global: {
     headers: {
-      'X-Client-Info': '@supabase/supabase-js/2.48.1'
+      'X-Client-Info': '@supabase/supabase-js/2.48.1',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
     }
   }
 });
+
+// Add connection test
+export const testConnection = async () => {
+  try {
+    console.log('Testing database connection...');
+    console.log('Using Supabase URL:', supabaseUrl);
+    
+    // First test auth connection
+    const { data: authData, error: authError } = await supabase.auth.getSession();
+    if (authError) {
+      console.error('Auth connection test failed:', authError);
+      if (authError.message.includes('Failed to fetch')) {
+        console.error('Network error - check your Supabase URL and internet connection');
+      }
+      return false;
+    }
+    console.log('Auth connection test passed');
+
+    // Then test database connection
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1)
+      .single();
+
+    if (error) {
+      console.error('Database connection test failed:', error);
+      if (error.code === 'PGRST301') {
+        console.error('This appears to be a permissions error. Please check RLS policies.');
+      } else if (error.message.includes('Failed to fetch')) {
+        console.error('Network error - check your Supabase URL and internet connection');
+      }
+      return false;
+    }
+
+    console.log('Database connection test succeeded');
+    return true;
+  } catch (err) {
+    console.error('Unexpected error testing connection:', err);
+    return false;
+  }
+};
 
 // Re-export types and constants
 export type { Subject, UserType, Ticket, Response, TutorSubject, Profile, Message, Conversation, Meeting, MeetingStatus, StudyRoom, StudyRoomParticipant, StudyRoomMessage };
@@ -44,25 +117,65 @@ export const signIn = async (email: string, password: string) => {
 
 export const signUp = async (email: string, password: string, userType: UserType) => {
   try {
+    console.log('Starting signup process for:', email, 'as', userType);
+    
     const { origin } = window.location;
-    const result = await supabase.auth.signUp({
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           user_type: userType
         },
-        emailRedirectTo: `${origin}/auth/callback`,
+        emailRedirectTo: `${origin}/auth/callback`
       }
     });
     
-    if (result.error) {
-      throw result.error;
+    if (signUpError) {
+      console.error('Signup error:', signUpError);
+      throw signUpError;
     }
+
+    if (!authData.user) {
+      console.error('No user data returned from signup');
+      throw new Error('Failed to create user account');
+    }
+
+    console.log('User created successfully:', authData.user.id);
+
+    // Add delay to ensure auth is propagated
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Try to create profile with retries
+    let profileError = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const { error: createError } = await createProfile(
+          authData.user.id,
+          email.split('@')[0], // Use email prefix as initial username
+          email,
+          userType
+        );
+        
+        if (!createError) {
+          console.log('Profile created successfully');
+          return { data: authData, error: null };
+        }
+        
+        profileError = createError;
+        console.log(`Profile creation attempt ${i + 1} failed:`, createError);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (err) {
+        profileError = err;
+        console.log(`Profile creation attempt ${i + 1} failed with error:`, err);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    throw new Error(`Failed to create profile after retries: ${profileError?.message || 'Unknown error'}`);
     
-    return result;
   } catch (error) {
-    console.error('Sign up error:', error);
+    console.error('Detailed signup error:', error);
     return { error };
   }
 };
@@ -73,13 +186,77 @@ export const signOut = async () => {
 
 // Get current user type
 export const getUserType = async (): Promise<UserType | null> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.user_metadata?.user_type || null;
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+    
+    if (!user) {
+      console.error('No user found in session');
+      return null;
+    }
+    
+    const userType = user.user_metadata?.user_type;
+    if (!userType) {
+      console.error('No user_type found in user metadata:', user.user_metadata);
+    }
+    
+    return userType || null;
+  } catch (error) {
+    console.error('Unexpected error in getUserType:', error);
+    return null;
+  }
+};
+
+// Add a helper function to check auth state
+export const checkAuthState = async () => {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      return { error: sessionError };
+    }
+    
+    if (!session) {
+      console.error('No active session found');
+      return { error: new Error('No active session') };
+    }
+    
+    const userType = await getUserType();
+    if (!userType) {
+      console.error('No user type found for user:', session.user.id);
+      return { error: new Error('No user type found') };
+    }
+    
+    return { session, userType };
+  } catch (error) {
+    console.error('Unexpected error checking auth state:', error);
+    return { error: new Error('Failed to check auth state') };
+  }
 };
 
 // Ticket functions
 export const createTicket = async (studentId: string, subject: Subject, topic: string, description: string) => {
   console.log('Starting ticket creation with:', { studentId, subject, topic, description });
+  
+  // Check auth status and role first
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log('Current auth user:', user);
+  const userType = await getUserType();
+  console.log('User type:', userType);
+  
+  if (!user) {
+    console.error('No authenticated user found');
+    return { error: new Error('Not authenticated') };
+  }
+  
+  if (userType !== 'student') {
+    console.error('User is not a student');
+    return { error: new Error('Only students can create tickets') };
+  }
   
   // Validate UUID format
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -89,43 +266,58 @@ export const createTicket = async (studentId: string, subject: Subject, topic: s
   }
   console.log('UUID validation passed');
   
-  // First get the student's username
-  const { data: profile, error: profileError } = await getProfile(studentId);
-  console.log('Profile lookup result:', { profile, profileError });
-  
-  if (profileError) {
-    console.error('Profile lookup error:', profileError);
-    return { error: profileError };
-  }
-  if (!profile) {
-    console.error('No profile found for student ID:', studentId);
-    return { error: new Error('Student profile not found') };
-  }
-  console.log('Found profile:', profile);
+  try {
+    // First get the student's username
+    const { data: profile, error: profileError } = await getProfile(studentId);
+    console.log('Profile lookup result:', { profile, profileError });
+    
+    if (profileError) {
+      console.error('Profile lookup error:', profileError);
+      return { error: profileError };
+    }
+    if (!profile) {
+      console.error('No profile found for student ID:', studentId);
+      return { error: new Error('Student profile not found') };
+    }
+    console.log('Found profile:', profile);
 
-  // Create the ticket
-  console.log('Attempting to insert ticket with data:', {
-    student_id: studentId,
-    student_username: profile.username,
-    subject,
-    topic,
-    description
-  });
-  
-  const result = await supabase
-    .from(DB_SCHEMA.tickets.tableName)
-    .insert([{
+    // Create the ticket
+    console.log('Attempting to insert ticket with data:', {
       student_id: studentId,
       student_username: profile.username,
       subject,
       topic,
       description
-    }])
-    .select()
-    .single();
+    });
     
-  console.log('Insert result:', result);
-  return result;
+    const result = await supabase
+      .from(DB_SCHEMA.tickets.tableName)
+      .insert([{
+        student_id: studentId,
+        student_username: profile.username,
+        subject,
+        topic,
+        description
+      }])
+      .select()
+      .single();
+      
+    if (result.error) {
+      console.error('Ticket creation error:', result.error);
+      // Check if it's a permissions error
+      if (result.error.code === 'PGRST301') {
+        console.error('This appears to be a permissions error. Checking user role...');
+        const userType = await getUserType();
+        console.error('User type:', userType);
+      }
+    }
+    
+    console.log('Insert result:', result);
+    return result;
+  } catch (error) {
+    console.error('Unexpected error during ticket creation:', error);
+    return { error: new Error('Unexpected error during ticket creation') };
+  }
 };
 
 export const getStudentTickets = async (studentId: string) => {
@@ -149,11 +341,6 @@ export const getStudentTickets = async (studentId: string) => {
 };
 
 export const getTutorTickets = async (tutorId: string) => {
-  const { data: tutorSubjects } = await getTutorSubjects(tutorId);
-  if (!tutorSubjects) return { data: null, error: new Error('Failed to load tutor subjects') };
-  
-  const subjects = tutorSubjects.map(s => s.subject);
-  
   return await supabase
     .from(DB_SCHEMA.tickets.tableName)
     .select(`
@@ -169,7 +356,6 @@ export const getTutorTickets = async (tutorId: string) => {
         parent_id
       )
     `)
-    .in(DB_SCHEMA.tickets.columns.subject, subjects)
     .eq(DB_SCHEMA.tickets.columns.closed, false)
     .order(DB_SCHEMA.tickets.columns.created_at, { ascending: false });
 };
@@ -233,15 +419,22 @@ export const createResponse = async (
 
 // Tutor subject functions
 export const getTutorSubjects = async (tutorId: string) => {
-  return await supabase
-    .from(DB_SCHEMA.tutor_subjects.tableName)
-    .select(DB_SCHEMA.tutor_subjects.columns.subject)
-    .eq(DB_SCHEMA.tutor_subjects.columns.tutor_id, tutorId);
+  const { data, error } = await supabase
+    .from('tutor_subjects')
+    .select('subject')
+    .eq('tutor_id', tutorId);
+  
+  if (error) {
+    console.error('Error getting tutor subjects:', error);
+    return { data: null, error };
+  }
+  
+  return { data: data as { subject: Subject }[], error: null };
 };
 
 export const addTutorSubject = async (tutorId: string, subject: Subject) => {
   return await supabase
-    .from(DB_SCHEMA.tutor_subjects.tableName)
+    .from('tutor_subjects')
     .insert([{
       tutor_id: tutorId,
       subject
@@ -250,10 +443,10 @@ export const addTutorSubject = async (tutorId: string, subject: Subject) => {
 
 export const removeTutorSubject = async (tutorId: string, subject: Subject) => {
   return await supabase
-    .from(DB_SCHEMA.tutor_subjects.tableName)
+    .from('tutor_subjects')
     .delete()
-    .eq(DB_SCHEMA.tutor_subjects.columns.tutor_id, tutorId)
-    .eq(DB_SCHEMA.tutor_subjects.columns.subject, subject);
+    .eq('tutor_id', tutorId)
+    .eq('subject', subject);
 };
 
 // Profile functions
@@ -297,10 +490,50 @@ export const updateProfile = async (
     bio?: string;
   }
 ) => {
-  return await supabase
+  // First update the profile
+  const { error: profileError } = await supabase
     .from(DB_SCHEMA.profiles.tableName)
     .update(data)
     .eq(DB_SCHEMA.profiles.columns.user_id, userId);
+
+  if (profileError) return { error: profileError };
+
+  // If specialties were updated and this is a tutor's profile
+  if (data.specialties) {
+    // Get current tutor subjects
+    const { data: currentSubjects } = await getTutorSubjects(userId);
+    const currentSubjectSet = new Set((currentSubjects || []).map(s => s.subject));
+    const newSubjectSet = new Set(data.specialties);
+
+    // Subjects to add (in new set but not in current)
+    const subjectsToAdd = data.specialties.filter(s => !currentSubjectSet.has(s));
+    
+    // Subjects to remove (in current but not in new)
+    const subjectsToRemove = Array.from(currentSubjectSet).filter(s => !newSubjectSet.has(s));
+
+    // Add new subjects
+    if (subjectsToAdd.length > 0) {
+      const { error: addError } = await supabase
+        .from(DB_SCHEMA.tutor_subjects.tableName)
+        .insert(subjectsToAdd.map(subject => ({
+          tutor_id: userId,
+          subject
+        })));
+      if (addError) return { error: addError };
+    }
+
+    // Remove old subjects
+    if (subjectsToRemove.length > 0) {
+      const { error: removeError } = await supabase
+        .from(DB_SCHEMA.tutor_subjects.tableName)
+        .delete()
+        .eq(DB_SCHEMA.tutor_subjects.columns.tutor_id, userId)
+        .in(DB_SCHEMA.tutor_subjects.columns.subject, subjectsToRemove);
+      if (removeError) return { error: removeError };
+    }
+  }
+
+  return { error: null };
 };
 
 // Messaging functions
@@ -315,33 +548,6 @@ export const searchUsers = async (query: string, role?: UserType) => {
   }
 
   return await profilesQuery;
-};
-
-export const createConversation = async (otherUserId: string, otherUsername: string, currentUserId: string, currentUsername: string) => {
-  // Start a transaction
-  const { data: conversation, error: conversationError } = await supabase
-    .from('conversations')
-    .insert({})
-    .select()
-    .single();
-
-  if (conversationError || !conversation) {
-    return { error: conversationError };
-  }
-
-  // Add participants
-  const { error: participantsError } = await supabase
-    .from('conversation_participants')
-    .insert([
-      { conversation_id: conversation.id, user_id: currentUserId, username: currentUsername },
-      { conversation_id: conversation.id, user_id: otherUserId, username: otherUsername }
-    ]);
-
-  if (participantsError) {
-    return { error: participantsError };
-  }
-
-  return { data: conversation };
 };
 
 export const getUserConversations = async (userId: string) => {
@@ -463,84 +669,94 @@ export const subscribeToConversations = (userId: string, callback: (conversation
 
 // Create or get existing conversation with another user
 export const createOrGetConversation = async (userId: string, userUsername: string, otherUserId: string, otherUsername: string) => {
-  // Check if conversation already exists between these two users
+  // First check if a private conversation already exists between these two users
   const { data: existingConversations, error: existingError } = await supabase
-    .from(DB_SCHEMA.conversations.tableName)
-    .select(`
-      id,
-      conversation_participants!inner (
-        user_id,
-        username
-      )
-    `)
-    .or(`and(conversation_participants.user_id.eq.${userId},conversation_participants.user_id.eq.${otherUserId})`);
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', userId)
+    .filter('conversation_id', 'in', (
+      supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', otherUserId)
+    ));
 
   if (existingError) {
     console.error('Error checking existing conversation:', existingError);
     return { error: existingError };
   }
 
-  // Check if any of the returned conversations have both users as participants
-  const sharedConversation = existingConversations?.find(conv => {
-    const participants = conv.conversation_participants;
-    return participants.some(p => p.user_id === userId) && 
-           participants.some(p => p.user_id === otherUserId);
-  });
-
-  if (sharedConversation) {
-    return { data: sharedConversation.id };
+  if (existingConversations && existingConversations.length > 0) {
+    // Found an existing conversation
+    return { data: existingConversations[0].conversation_id };
   }
 
-  // Create new conversation if none exists
-  const { data: conversation, error: conversationError } = await supabase
-    .from(DB_SCHEMA.conversations.tableName)
-    .insert({})
-    .select()
-    .single();
+  try {
+    // Create a new conversation with explicit created_by
+    const { data: conversation, error: conversationError } = await supabase
+      .from('conversations')
+      .insert([{
+        created_by: userId  // Explicitly set created_by
+      }])
+      .select('id')
+      .single();
 
-  if (conversationError) {
-    console.error('Error creating conversation:', conversationError);
-    return { error: conversationError };
+    if (conversationError) {
+      console.error('Detailed conversation creation error:', conversationError);
+      throw conversationError;
+    }
+
+    if (!conversation) {
+      console.error('No conversation returned after creation');
+      throw new Error('Failed to create conversation - no data returned');
+    }
+
+    // Add both participants
+    const { error: participantsError } = await supabase
+      .from('conversation_participants')
+      .insert([
+        {
+          conversation_id: conversation.id,
+          user_id: userId,
+          username: userUsername
+        },
+        {
+          conversation_id: conversation.id,
+          user_id: otherUserId,
+          username: otherUsername
+        }
+      ]);
+
+    if (participantsError) {
+      console.error('Detailed participants creation error:', participantsError);
+      throw participantsError;
+    }
+
+    return { data: conversation.id };
+  } catch (error) {
+    console.error('Detailed error in conversation creation:', error);
+    return { error };
   }
-
-  if (!conversation) {
-    console.error('No conversation created');
-    return { error: new Error('Failed to create conversation') };
-  }
-
-  // Add participants
-  const { error: participantsError } = await supabase
-    .from(DB_SCHEMA.conversation_participants.tableName)
-    .insert([
-      {
-        conversation_id: conversation.id,
-        user_id: userId,
-        username: userUsername
-      },
-      {
-        conversation_id: conversation.id,
-        user_id: otherUserId,
-        username: otherUsername
-      }
-    ]);
-
-  if (participantsError) {
-    console.error('Error adding participants:', participantsError);
-    return { error: participantsError };
-  }
-
-  return { data: conversation.id };
 };
+
+// Type guard for Subject
+export function isValidSubject(value: string): value is Subject {
+  return AVAILABLE_SUBJECTS.includes(value as Subject);
+}
 
 // Meeting functions
 export const requestMeeting = async (
   studentId: string,
   tutorId: string,
-  subject: Subject,
+  subject: string,
   startTime: string,
   endTime: string,
   notes?: string
 ) => {
+  if (!isValidSubject(subject)) {
+    return { error: new Error('Invalid subject') };
+  }
+
   // Get usernames
   const [studentProfile, tutorProfile] = await Promise.all([
     getProfile(studentId),
@@ -555,7 +771,7 @@ export const requestMeeting = async (
   }
 
   return await supabase
-    .from(DB_SCHEMA.meetings.tableName)
+    .from('meetings')
     .insert({
       student_id: studentId,
       student_username: studentProfile.data.username,
@@ -597,78 +813,24 @@ export const subscribeToMeetings = (userId: string, userType: UserType, callback
         event: '*',
         schema: 'public',
         table: DB_SCHEMA.meetings.tableName,
-        filter: `${userType}_id=eq.${userId}`
+        filter: userType === 'student' 
+          ? `student_id=eq.${userId}`
+          : `tutor_id=eq.${userId}`
       },
       (payload) => {
-        callback(payload.new as Meeting);
+        // Handle different types of changes
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          callback(payload.new as Meeting);
+        }
       }
     )
     .subscribe();
 };
 
-// Study room functions
-export const createStudyRoom = async (
-  name: string,
-  subject: Subject,
-  description: string | null,
-  userId: string,
-  isPrivate: boolean = false
-) => {
-  try {
-    // First check if the user has a profile
-    const { data: profile, error: profileError } = await getProfile(userId);
-    if (profileError) {
-      console.error('Error getting user profile:', profileError);
-      return { data: null, error: new Error('Failed to get user profile') };
-    }
-    if (!profile) {
-      return { data: null, error: new Error('User profile not found') };
-    }
-
-    // Create the study room
-    const { data: room, error: roomError } = await supabase
-      .from(DB_SCHEMA.study_rooms.tableName)
-      .insert({
-        name,
-        subject,
-        description,
-        created_by: userId,
-        is_private: isPrivate
-      })
-      .select()
-      .single();
-
-    if (roomError) {
-      console.error('Error creating study room:', roomError);
-      return { data: null, error: new Error('Failed to create study room: ' + roomError.message) };
-    }
-
-    if (!room) {
-      return { data: null, error: new Error('Study room was not created') };
-    }
-
-    // Automatically join the creator to the room
-    const { error: joinError } = await joinStudyRoom(room.id, userId, profile.username);
-    if (joinError) {
-      console.error('Error joining study room:', joinError);
-      // Try to delete the room since we couldn't join it
-      await supabase
-        .from(DB_SCHEMA.study_rooms.tableName)
-        .delete()
-        .eq('id', room.id);
-      return { data: null, error: new Error('Failed to join the created study room') };
-    }
-
-    return { data: room, error: null };
-  } catch (err) {
-    console.error('Unexpected error creating study room:', err);
-    return { data: null, error: new Error('An unexpected error occurred while creating the study room') };
-  }
-};
-
-export const getStudyRooms = async (subject?: Subject) => {
-  let query = supabase
-    .from(DB_SCHEMA.study_rooms.tableName)
+// Study Room Functions
+export async function getStudyRooms() {
+  const { data, error } = await supabase
+    .from('study_rooms')
     .select(`
       *,
       study_room_participants (
@@ -678,162 +840,163 @@ export const getStudyRooms = async (subject?: Subject) => {
     `)
     .order('created_at', { ascending: false });
 
-  if (subject) {
-    query = query.eq('subject', subject);
+  if (error) {
+    console.error('Error fetching study rooms:', error);
+    return { data: null, error };
   }
 
-  return await query;
-};
+  return { data, error: null };
+}
 
-export const joinStudyRoom = async (roomId: string, userId: string, username: string) => {
-  return await supabase
-    .from(DB_SCHEMA.study_room_participants.tableName)
-    .insert({
-      room_id: roomId,
-      user_id: userId,
-      username
-    })
+export async function createStudyRoom(name: string, description: string | null) {
+  const { data, error } = await supabase
+    .from('study_rooms')
+    .insert([{ name, description }])
     .select()
     .single();
-};
 
-export const leaveStudyRoom = async (roomId: string, userId: string) => {
-  return await supabase
-    .from(DB_SCHEMA.study_room_participants.tableName)
+  if (error) {
+    console.error('Error creating study room:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+export async function joinStudyRoom(roomId: number, userId: string, username: string) {
+  const { data, error } = await supabase
+    .from('study_room_participants')
+    .insert([{ room_id: roomId, user_id: userId, username }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error joining study room:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+export async function leaveStudyRoom(roomId: number, userId: string) {
+  const { error } = await supabase
+    .from('study_room_participants')
     .delete()
-    .match({
-      room_id: roomId,
-      user_id: userId
-    });
-};
+    .match({ room_id: roomId, user_id: userId });
 
-export const getStudyRoomMessages = async (roomId: string) => {
-  return await supabase
-    .from(DB_SCHEMA.study_room_messages.tableName)
+  if (error) {
+    console.error('Error leaving study room:', error);
+    return { error };
+  }
+
+  return { error: null };
+}
+
+export async function getStudyRoomMessages(roomId: number) {
+  const { data, error } = await supabase
+    .from('study_room_messages')
     .select('*')
     .eq('room_id', roomId)
     .order('created_at', { ascending: true });
-};
 
-export const sendStudyRoomMessage = async (
-  roomId: string,
-  senderId: string,
-  senderUsername: string,
-  content: string
-) => {
-  return await supabase
-    .from(DB_SCHEMA.study_room_messages.tableName)
-    .insert({
-      room_id: roomId,
-      sender_id: senderId,
-      sender_username: senderUsername,
-      content
-    })
+  if (error) {
+    console.error('Error fetching study room messages:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+export async function sendStudyRoomMessage(roomId: number, userId: string, username: string, content: string) {
+  const { data, error } = await supabase
+    .from('study_room_messages')
+    .insert([{ room_id: roomId, user_id: userId, username, content }])
     .select()
     .single();
-};
 
-export const subscribeToStudyRoomMessages = (roomId: string, onMessage: (message: StudyRoomMessage) => void) => {
-  return supabase
-    .channel(`study_room_messages:${roomId}`)
+  if (error) {
+    console.error('Error sending study room message:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+export function subscribeToStudyRoomMessages(roomId: number, callback: (message: StudyRoomMessage) => void) {
+  const subscription = supabase
+    .channel(`study_room_${roomId}`)
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
-        table: DB_SCHEMA.study_room_messages.tableName,
+        table: 'study_room_messages',
         filter: `room_id=eq.${roomId}`
       },
       (payload) => {
-        onMessage(payload.new as StudyRoomMessage);
+        callback(payload.new as StudyRoomMessage);
       }
     )
     .subscribe();
-};
 
-export const subscribeToStudyRoomParticipants = (roomId: string, onParticipantChange: (participant: StudyRoomParticipant) => void) => {
-  return supabase
-    .channel(`study_room_participants:${roomId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: DB_SCHEMA.study_room_participants.tableName,
-        filter: `room_id=eq.${roomId}`
-      },
-      (payload) => {
-        onParticipantChange(payload.new as StudyRoomParticipant);
-      }
-    )
-    .subscribe();
-};
+  return subscription;
+}
 
-export const inviteToStudyRoom = async (roomId: string, inviteeEmail: string) => {
-  // First, check if the room exists and is private
-  const { data: room, error: roomError } = await supabase
-    .from(DB_SCHEMA.study_rooms.tableName)
-    .select('*')
-    .eq('id', roomId)
-    .single();
+export const subscribeToStudyRoomParticipants = undefined;
+export const inviteToStudyRoom = undefined;
+export const acceptStudyRoomInvitation = undefined;
 
-  if (roomError) return { data: null, error: roomError };
-  if (!room.is_private) return { data: null, error: new Error('Room is not private') };
-
-  // Get the invitee's profile
-  const { data: inviteeProfile, error: profileError } = await supabase
-    .from(DB_SCHEMA.profiles.tableName)
-    .select('*')
-    .eq('email', inviteeEmail)
-    .single();
-
-  if (profileError) return { data: null, error: new Error('User not found') };
-
-  // Create the invitation
-  const { data: invitation, error: inviteError } = await supabase
-    .from('study_room_invitations')
-    .insert({
-      room_id: roomId,
-      invitee_id: inviteeProfile.user_id,
+export const sendConnectionInvitation = async (
+  fromUserId: string,
+  fromUsername: string,
+  toUserId: string,
+  toUsername: string
+) => {
+  return await supabase
+    .from('connection_invitations')
+    .insert([{
+      from_user_id: fromUserId,
+      to_user_id: toUserId,
+      from_username: fromUsername,
+      to_username: toUsername,
       status: 'pending'
-    })
-    .select()
-    .single();
-
-  if (inviteError) return { data: null, error: inviteError };
-
-  // TODO: Send email notification to invitee (implement this based on your email service)
-
-  return { data: invitation, error: null };
+    }]);
 };
 
-export const acceptStudyRoomInvitation = async (invitationId: string, userId: string) => {
-  // Get the invitation
-  const { data: invitation, error: inviteError } = await supabase
-    .from('study_room_invitations')
+export const getReceivedInvitations = async (userId: string) => {
+  return await supabase
+    .from('connection_invitations')
     .select('*')
-    .eq('id', invitationId)
-    .eq('invitee_id', userId)
-    .single();
+    .eq('to_user_id', userId)
+    .eq('status', 'pending');
+};
 
-  if (inviteError) return { data: null, error: inviteError };
-  if (!invitation) return { data: null, error: new Error('Invitation not found') };
+export const getSentInvitations = async (userId: string) => {
+  return await supabase
+    .from('connection_invitations')
+    .select('*')
+    .eq('from_user_id', userId)
+    .eq('status', 'pending');
+};
 
-  // Get user profile
-  const { data: profile } = await getProfile(userId);
-  if (!profile) return { data: null, error: new Error('User profile not found') };
-
-  // Join the room
-  const { error: joinError } = await joinStudyRoom(invitation.room_id, userId, profile.username);
-  if (joinError) return { data: null, error: joinError };
-
-  // Update invitation status
-  const { error: updateError } = await supabase
-    .from('study_room_invitations')
-    .update({ status: 'accepted' })
+export const updateInvitationStatus = async (
+  invitationId: number,
+  status: 'accepted' | 'rejected'
+) => {
+  return await supabase
+    .from('connection_invitations')
+    .update({ status })
     .eq('id', invitationId);
+};
 
-  if (updateError) return { data: null, error: updateError };
-
-  return { data: true, error: null };
+// Function to create connection after invitation is accepted
+export const createConnectionFromInvitation = async (invitation: ConnectionInvitation) => {
+  return await supabase
+    .from('student_tutor_connections')
+    .insert([{
+      student_id: invitation.from_user_id,
+      tutor_id: invitation.to_user_id,
+      student_username: invitation.from_username,
+      tutor_username: invitation.to_username
+    }]);
 }; 
