@@ -8,7 +8,13 @@ const nextConfig = {
     unoptimized: true
   },
   // Disable source maps in production
-  productionBrowserSourceMaps: false
+  productionBrowserSourceMaps: false,
+  // Enable build cache
+  experimental: {
+    turbotrace: {
+      memoryLimit: 4000
+    }
+  }
 }
 
 module.exports = nextConfig 
