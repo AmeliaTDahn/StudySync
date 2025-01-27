@@ -5,7 +5,10 @@ const nextConfig = {
   output: 'standalone',
   images: {
     domains: ['localhost'],
+    unoptimized: true
   },
+  // Disable source maps in production
+  productionBrowserSourceMaps: false
 }
 
 module.exports = nextConfig 
