@@ -3,7 +3,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "amplify": "amplify"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.735.0",
@@ -23,7 +24,9 @@
     "@types/node": "^22.10.10",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
-    "aws-amplify": "^6.12.2",
+    "aws-amplify": "^6.0.0",
+    "@aws-amplify/backend": "^0.12.0",
+    "@aws-amplify/backend-cli": "^0.12.0",
     "lucide-react": "^0.474.0",
     "next": "^14.0.4",
     "react": "^18.2.0",
