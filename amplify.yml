@@ -1,10 +1,4 @@
 version: 1
-backend:
-  phases:
-    build:
-      commands:
-        - npm install
-        - npx amplify push --yes
 frontend:
   phases:
     preBuild:
@@ -15,7 +9,6 @@ frontend:
         - npm ci
     build:
       commands:
-        - env | grep -e NEXT_PUBLIC_ -e AWS_ || true
         - npm run build
   artifacts:
     baseDirectory: .next
