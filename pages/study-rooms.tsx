@@ -170,6 +170,19 @@ const StudyRoomsPage = () => {
     scrollToBottom();
   }, [messages]);
 
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !selectedRoom || !newMessage.trim()) return;
+
+    const { error } = await sendStudyRoomMessage(selectedRoom.id, user.id, user.email || 'Anonymous', newMessage.trim());
+    if (error) {
+      setError('Failed to send message');
+      return;
+    }
+
+    setNewMessage('');
+  };
+
   const isUserInRoom = (room: StudyRoom) => {
     return room.study_room_participants?.some(
       (participant: StudyRoomParticipant) => participant.user_id === user?.id
