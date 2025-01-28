@@ -111,27 +111,13 @@ const StudentsPage = () => {
       
       const connectedStudentIds = connections?.map(c => c.student_id) || [];
 
-      // Get IDs of students with pending invitations
-      const { data: pendingInvitations, error: invitationsError } = await supabase
-        .from('connection_invitations')
-        .select('to_user_id, from_user_id')
-        .or(`to_user_id.eq.${user?.id},from_user_id.eq.${user?.id}`)
-        .eq('status', 'pending');
-
-      if (invitationsError) throw invitationsError;
-
-      // Combine all excluded student IDs
-      const pendingStudentIds = pendingInvitations?.flatMap(inv => [inv.to_user_id, inv.from_user_id]) || [];
-      const excludedStudentIds = Array.from(new Set([...connectedStudentIds, ...pendingStudentIds]));
-
-      // Then search for students, excluding both connected ones and those with pending invitations
+      // Then search for students, excluding the connected ones
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'student')
         .ilike('username', searchQuery ? `%${searchQuery}%` : '%')
-        .not('user_id', 'in', `(${excludedStudentIds.length ? excludedStudentIds.join(',') : 'null'})`)
-        .not('user_id', 'eq', user?.id); // Also exclude the current user
+        .not('user_id', 'in', `(${connectedStudentIds.join(',')})`);
 
       if (error) throw error;
       setSearchResults(data || []);
