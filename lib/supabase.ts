@@ -1241,6 +1241,57 @@ export const updateInvitationStatus = async (
     .eq('id', invitationId);
 };
 
+export const getStudentStatistics = async (studentId: string) => {
+  try {
+    // Get total tickets
+    const { data: tickets, error: ticketsError } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('student_id', studentId);
+
+    if (ticketsError) {
+      console.error('Error fetching tickets:', ticketsError);
+      return { data: null, error: ticketsError };
+    }
+
+    // Get responses to find top tutor
+    const { data: responses, error: responsesError } = await supabase
+      .from('responses')
+      .select('tutor_username')
+      .eq('student_id', studentId)
+      .not('tutor_username', 'is', null);
+
+    if (responsesError) {
+      console.error('Error fetching responses:', responsesError);
+      return { data: null, error: responsesError };
+    }
+
+    // Count tutor responses
+    const tutorCounts = responses?.reduce((acc, curr) => {
+      if (curr.tutor_username) {
+        acc[curr.tutor_username] = (acc[curr.tutor_username] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // Find top tutor
+    const topTutor = Object.entries(tutorCounts || {})
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      [0]?.[0] || null;
+
+    return {
+      data: {
+        ticketCount: tickets?.length || 0,
+        topTutor
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('Error in getStudentStatistics:', error);
+    return { data: null, error };
+  }
+};
+
 export const updateTicketStatus = async (ticketId: string, status: string) => {
   try {
     const { data, error } = await supabase
