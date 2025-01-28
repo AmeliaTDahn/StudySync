@@ -1,3 +1,4 @@
+
 -- Begin transaction
 BEGIN;
 
@@ -6,7 +7,6 @@ DROP POLICY IF EXISTS "Users can view their conversations" ON conversations;
 DROP POLICY IF EXISTS "Users can create conversations" ON conversations;
 DROP POLICY IF EXISTS "Users can view conversation participants" ON conversation_participants;
 DROP POLICY IF EXISTS "Users can join conversations" ON conversation_participants;
-DROP POLICY IF EXISTS "Users can add participants" ON conversation_participants;
 
 -- Recreate conversation policies with correct permissions
 CREATE POLICY "Users can view their conversations"
@@ -36,6 +36,11 @@ CREATE POLICY "Users can view conversation participants"
 
 CREATE POLICY "Users can add participants"
     ON conversation_participants FOR INSERT
-    WITH CHECK (true);
+    WITH CHECK (auth.uid() = user_id OR 
+        EXISTS (
+            SELECT 1 FROM conversations 
+            WHERE id = conversation_id
+        )
+    );
 
 COMMIT;
