@@ -2,7 +2,6 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import { ArrowLeft, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import Link from 'next/link'; // Import Link component
 
 interface BackOnlyNavProps {
   title: string;
@@ -25,12 +24,12 @@ const BackOnlyNav: React.FC<BackOnlyNavProps> = ({ title }) => {
     try {
       console.log('Attempting to log out...');
       const { error } = await supabase.auth.signOut();
-
+      
       if (error) {
         console.error('Error during logout:', error);
         return;
       }
-
+      
       console.log('Logout successful, redirecting to signin page...');
       // Force a hard redirect to ensure clean state
       window.location.href = '/signin';
@@ -52,24 +51,16 @@ const BackOnlyNav: React.FC<BackOnlyNavProps> = ({ title }) => {
           </button>
           <h1 className="text-2xl font-bold text-blue-600">{title}</h1>
         </div>
-        <div className="flex items-center space-x-4"> {/* Added navigation container */}
-          <Link href="/messages" className="text-gray-600 hover:text-gray-900">
-            Messages
-          </Link>
-          <Link href="/statistics" className="text-gray-600 hover:text-gray-900">
-            Statistics
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="text-gray-600 hover:text-gray-800 flex items-center space-x-2"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="text-gray-600 hover:text-gray-800 flex items-center space-x-2"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
+        </button>
       </div>
     </nav>
   );
 };
 
-export default BackOnlyNav;
+export default BackOnlyNav; 
