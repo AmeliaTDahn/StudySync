@@ -13,7 +13,9 @@ import {
   AVAILABLE_SUBJECTS,
   getProfile,
   createResponse,
-  createOrGetConversation
+  createOrGetConversation,
+  getStudentTickets,
+  getTopTutorResponses,
 } from '../lib/supabase';
 import { ProfileForm } from '../components/profile-form';
 import ConnectionInvitations from '../components/connection-invitations';
@@ -32,6 +34,8 @@ const TutorHomepage = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [replyTo, setReplyTo] = useState<Response | null>(null);
   const [showAllResponses, setShowAllResponses] = useState(false);
+  const [tutorStatistics, setTutorStatistics] = useState<{topStudents: {username: string, count: number}[], topSubjects: {subject: string, count: number}[]}| null>(null);
+
 
   // Initialize state from localStorage
   useEffect(() => {
@@ -93,7 +97,7 @@ const TutorHomepage = () => {
       return;
     }
     setProfile(profileData);
-    
+
     // Set selected subjects from profile specialties
     setSelectedSubjects(profileData?.specialties || []);
 
@@ -113,6 +117,14 @@ const TutorHomepage = () => {
       return;
     }
     setActiveTickets(ticketData || []);
+    setError('');
+    const {data: stats, error: statsError} = await getTopTutorResponses(userId);
+    if(statsError){
+      console.error("Error loading tutor stats", statsError);
+      setError("Failed to load tutor statistics");
+      return;
+    }
+    setTutorStatistics(stats);
     setError('');
   };
 
@@ -217,6 +229,32 @@ const TutorHomepage = () => {
 
     return { topLevel, threads };
   };
+
+  const TutorStatistics = ({tutorId}: {tutorId: string}) => {
+    return (
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Your Statistics</h2>
+        {tutorStatistics && (
+          <>
+            <h3 className="text-lg font-medium mb-2">Top Students Responded To</h3>
+            <ul>
+              {tutorStatistics.topStudents.map((student) => (
+                <li key={student.username}>{student.username}: {student.count} tickets</li>
+              ))}
+            </ul>
+            <h3 className="text-lg font-medium mb-2">Top Subjects Responded To</h3>
+            <ul>
+              {tutorStatistics.topSubjects.map((subject) => (
+                <li key={subject.subject}>{subject.subject}: {subject.count} tickets</li>
+              ))}
+            </ul>
+          </>
+        )}
+        {!tutorStatistics && <p>Loading statistics...</p>}
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -495,7 +533,7 @@ const TutorHomepage = () => {
                           // Get replies for this response
                           const replies = selectedTicket.responses?.filter(reply => reply.parent_id === response.id) || [];
                           const shouldShowReplies = replies.length === 1 || selectedTicket.responses?.length <= 2;
-                          
+
                           return (
                             <div key={response.id}>
                               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -657,7 +695,7 @@ const TutorHomepage = () => {
                             // Get replies for this response
                             const replies = selectedTicket.responses?.filter(reply => reply.parent_id === response.id) || [];
                             const shouldShowReplies = replies.length === 1 || selectedTicket.responses?.length <= 2;
-                            
+
                             return (
                               <div key={response.id}>
                                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -786,4 +824,4 @@ const TutorHomepage = () => {
   );
 };
 
-export default TutorHomepage; 
+export default TutorHomepage;

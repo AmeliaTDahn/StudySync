@@ -20,10 +20,38 @@ import {
   Meeting,
   MeetingStatus,
   updateMeetingStatus,
-  subscribeToMeetings
+  subscribeToMeetings,
+  getStudentStatistics
 } from '../lib/supabase';
 import { ProfileForm } from '../components/profile-form';
 import ConnectionInvitations from '../components/connection-invitations';
+
+const StudentStatistics = ({studentId}: {studentId: string}) => {
+  const [statistics, setStatistics] = useState<{ticketCount: number, topTutor: string | null} | null>(null);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      const { data, error } = await getStudentStatistics(studentId);
+      if (error) {
+        console.error("Error fetching student statistics:", error);
+        return;
+      }
+      setStatistics(data);
+    };
+    fetchStatistics();
+  }, [studentId]);
+
+  if (!statistics) return <p>Loading statistics...</p>;
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 className="text-xl font-semibold">Your Statistics</h2>
+      <p>Total Tickets Created: {statistics.ticketCount}</p>
+      {statistics.topTutor && <p>Tutor Responded Most: {statistics.topTutor}</p>}
+    </div>
+  );
+};
+
 
 const StudentHomepage = () => {
   const router = useRouter();
@@ -94,7 +122,7 @@ const StudentHomepage = () => {
       // Get user profile
       const { data: profileData, error: profileError } = await getProfile(userId);
       if (profileError) throw profileError;
-      
+
       if (!profileData) {
         router.push('/profile');
         return;
@@ -110,11 +138,11 @@ const StudentHomepage = () => {
       // Get tickets
       const { data: ticketData, error: ticketError } = await getStudentTickets(userId);
       if (ticketError) throw ticketError;
-      
+
       const allTickets = ticketData || [];
-      
+
       setTickets(allTickets);
-      
+
       // Separate tickets into active and closed
       const active = allTickets.filter(ticket => !ticket.closed);
       const closed = allTickets.filter(ticket => ticket.closed);
@@ -164,7 +192,7 @@ const StudentHomepage = () => {
       setError('You must be logged in to create a ticket');
       return;
     }
-    
+
     if (!newTicket.subject || !newTicket.topic || !newTicket.description) {
       setError('Please fill in all fields');
       return;
@@ -221,17 +249,17 @@ const StudentHomepage = () => {
   const handleResponseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); // Clear any existing errors
-    
+
     if (!user) {
       setError('You must be logged in to respond');
       return;
     }
-    
+
     if (!selectedTicket) {
       setError('No ticket selected');
       return;
     }
-    
+
     if (!newResponse.trim()) {
       setError('Response cannot be empty');
       return;
@@ -303,19 +331,19 @@ const StudentHomepage = () => {
     const ticketToClose = tickets.find(t => t.id === ticketId);
     if (ticketToClose) {
       const updatedTicket = { ...ticketToClose, closed: true };
-      
+
       // Update tickets list
       setTickets(prev => prev.map(t => t.id === ticketId ? updatedTicket : t));
-      
+
       // Move from active to closed
       setActiveTickets(prev => prev.filter(t => t.id !== ticketId));
       setClosedTickets(prev => [...prev, updatedTicket]);
-      
+
       // Update selected ticket if it's the one being closed
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket(updatedTicket);
       }
-      
+
       // Switch to closed tickets tab
       setSelectedTab('closed');
     }
@@ -442,6 +470,7 @@ const StudentHomepage = () => {
             onInvitationHandled={() => user && loadUserData(user.id)} 
           />
         )}
+        {user && <StudentStatistics studentId={user.id} />}
 
         {/* Profile Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -809,7 +838,7 @@ const StudentHomepage = () => {
                 <button
                   type="button"
                   onClick={() => setShowNewTicketModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hoverbg-gray-200 rounded-md"
                 >
                   Cancel
                 </button>
@@ -939,4 +968,4 @@ const StudentHomepage = () => {
   );
 };
 
-export default StudentHomepage; 
+export default StudentHomepage;
