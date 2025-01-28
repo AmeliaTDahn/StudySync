@@ -81,16 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Handle routing based on auth state
   useEffect(() => {
     if (!initialized || loading) {
-      console.log('Skipping route change, not initialized or loading:', { initialized, loading });
       return;
     }
 
     const path = router.pathname;
-    console.log('Handling route change:', { user, profile, loading, initialized, error, path });
     
     // Don't redirect on these paths
     if (['/signin', '/', '/auth/callback'].includes(path)) {
-      console.log('No redirect needed for path:', path);
       return;
     }
     
