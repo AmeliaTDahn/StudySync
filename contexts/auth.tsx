@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('Fetching profile for user:', userId);
     try {
       const { data: profileData, error: profileError } = await getProfile(userId);
-
+      
       if (profileError) {
         console.error('Error fetching profile:', profileError);
         if (profileError.code === 'PGRST116') {
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Profile loaded:', profileData);
         setProfile(profileData);
         setError(null);
-
+        
         // If we're on the profile page but have a profile, redirect to dashboard
         if (router.pathname === '/profile') {
           console.log('Profile exists, redirecting to dashboard');
@@ -87,13 +87,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const path = router.pathname;
     console.log('Handling route change:', { user, profile, loading, initialized, error, path });
-
+    
     // Don't redirect on these paths
     if (['/signin', '/', '/auth/callback'].includes(path)) {
       console.log('No redirect needed for path:', path);
       return;
     }
-
+    
     if (!user) {
       console.log('No authenticated user, redirecting to signin');
       router.replace('/signin');
@@ -120,12 +120,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log('Setting up auth subscription...');
     let mounted = true;
-
+    
     const {
       data: { subscription: authSubscription }
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
-
+      
       if (!mounted) return;
 
       if (event === 'SIGNED_OUT') {
@@ -149,10 +149,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth state...');
-
+        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         console.log('Auth session result:', { session, error: sessionError });
-
+        
         if (!mounted) return;
 
         if (sessionError) {
@@ -199,4 +199,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
+} 
