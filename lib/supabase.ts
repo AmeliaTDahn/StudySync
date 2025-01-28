@@ -139,6 +139,12 @@ export const signUp = async (email: string, password: string, userType: UserType
       throw new Error('Failed to create user account');
     }
 
+    // If user needs to confirm their email
+    if (!authData.user?.confirmed_at) {
+      console.log('User created, awaiting email confirmation');
+      return { data: authData, error: null };
+    }
+
     console.log('User created successfully:', authData.user.id);
 
     // Add delay to ensure auth is propagated

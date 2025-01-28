@@ -38,9 +38,15 @@ export default function SignIn() {
         const { error: signUpError } = await signUp(email, password, userType);
         if (signUpError) {
           console.error('Signup error:', signUpError);
-          throw signUpError;
+          const authError = signUpError as AuthError;
+          if (authError.message?.toLowerCase().includes('email') && authError.message?.toLowerCase().includes('confirm')) {
+            setSuccess('Please check your email to confirm your account before signing in.');
+          } else {
+            throw signUpError;
+          }
+        } else {
+          setSuccess('Please check your email to confirm your account before signing in.');
         }
-        setSuccess('Please check your email to confirm your account before signing in.');
       } else {
         console.log('Attempting sign in with:', { email });
         const { error: signInError } = await signIn(email, password);

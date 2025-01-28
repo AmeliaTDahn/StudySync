@@ -24,11 +24,10 @@ type CalendarMeeting = Omit<Meeting, 'id'> & {
 };
 
 const statusColors: Record<MeetingStatus, string> = {
-  pending: '#FCD34D',   // Yellow
-  accepted: '#34D399',  // Green
-  rejected: '#F87171',  // Red
-  completed: '#60A5FA', // Blue
-  cancelled: '#9CA3AF'  // Gray
+  pending: '#FCD34D',    // Yellow
+  confirmed: '#34D399',  // Green
+  completed: '#60A5FA',  // Blue
+  cancelled: '#9CA3AF'   // Gray
 };
 
 export default function MeetingCalendar({ userId, userType }: MeetingCalendarProps) {
@@ -244,8 +243,7 @@ export default function MeetingCalendar({ userId, userType }: MeetingCalendarPro
                 <span className={`
                   px-2 py-1 rounded-full text-sm
                   ${selectedMeeting.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    selectedMeeting.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                    selectedMeeting.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    selectedMeeting.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                     selectedMeeting.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                     'bg-gray-100 text-gray-800'}
                 `}>
@@ -257,21 +255,21 @@ export default function MeetingCalendar({ userId, userType }: MeetingCalendarPro
             {userType === 'tutor' && selectedMeeting.status === 'pending' && (
               <div className="mt-6 flex space-x-3">
                 <button
-                  onClick={() => handleUpdateStatus('accepted')}
+                  onClick={() => handleUpdateStatus('confirmed')}
                   className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 >
                   Accept
                 </button>
                 <button
-                  onClick={() => handleUpdateStatus('rejected')}
+                  onClick={() => handleUpdateStatus('cancelled')}
                   className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 >
-                  Reject
+                  Cancel
                 </button>
               </div>
             )}
 
-            {(userType === 'tutor' || userType === 'student') && selectedMeeting.status === 'accepted' && (
+            {(userType === 'tutor' || userType === 'student') && selectedMeeting.status === 'confirmed' && (
               <div className="mt-6">
                 <button
                   onClick={() => handleUpdateStatus('completed')}
