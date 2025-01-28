@@ -294,3 +294,46 @@ const TutorsPage = () => {
 };
 
 export default TutorsPage; 
+import { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/auth';
+import { supabase } from '../lib/supabase';
+
+export default function TutorsPage() {
+  const { user, profile } = useAuth();
+  const [tutors, setTutors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTutors = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'tutor');
+      
+      if (!error && data) {
+        setTutors(data);
+      }
+      setLoading(false);
+    };
+
+    fetchTutors();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Available Tutors</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {tutors.map((tutor) => (
+          <div key={tutor.id} className="border p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold">{tutor.username}</h2>
+            <p className="text-gray-600">{tutor.bio}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
