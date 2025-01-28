@@ -86,8 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const path = router.pathname;
     
-    // Don't redirect on these paths
+    // Don't redirect on auth paths
     if (['/signin', '/', '/auth/callback'].includes(path)) {
+      return;
+    }
+
+    // Redirect to signin if not authenticated
+    if (!user && !loading) {
+      router.push('/signin');
       return;
     }
     
