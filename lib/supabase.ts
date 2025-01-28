@@ -381,58 +381,38 @@ export const getTutorTickets = async (tutorId: string) => {
     return { data: [], error: new Error('Not authenticated') };
   }
 
-  // Check the tutor's profile and subjects
-  const [profileResult, subjectsResult] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', tutorId)
-      .single(),
-    supabase
-      .from('tutor_subjects')
-      .select('subject')
-      .eq('tutor_id', tutorId)
-  ]);
+  // Check the tutor's profile
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', tutorId)
+    .single();
 
   console.log('Tutor profile check:', { 
-    profile: profileResult.data ? { 
-      id: profileResult.data.user_id, 
-      role: profileResult.data.role,
-      username: profileResult.data.username 
+    profile: profile ? { 
+      id: profile.user_id, 
+      role: profile.role,
+      username: profile.username 
     } : null, 
-    error: profileResult.error,
-    subjects: subjectsResult.data?.map(s => s.subject)
+    error: profileError
   });
 
-  if (profileResult.error) {
-    console.error('Error fetching tutor profile:', profileResult.error);
-    return { error: profileResult.error };
+  if (profileError) {
+    console.error('Error fetching tutor profile:', profileError);
+    return { error: profileError };
   }
 
-  if (!profileResult.data) {
+  if (!profile) {
     console.error('No profile found for tutor:', tutorId);
     return { data: [], error: null };
   }
 
-  if (profileResult.data.role !== 'tutor') {
-    console.error('Profile is not a tutor:', profileResult.data.role);
+  if (profile.role !== 'tutor') {
+    console.error('Profile is not a tutor:', profile.role);
     return { data: [], error: new Error('Not a tutor profile') };
   }
 
-  if (subjectsResult.error) {
-    console.error('Error fetching tutor subjects:', subjectsResult.error);
-    return { error: subjectsResult.error };
-  }
-
-  const tutorSubjects = subjectsResult.data?.map(s => s.subject) || [];
-  console.log('Tutor subjects:', tutorSubjects);
-
-  if (tutorSubjects.length === 0) {
-    console.log('Tutor has no subjects registered');
-    return { data: [], error: null };
-  }
-
-  // Get tickets for the tutor's subjects
+  // Get all active tickets
   const result = await supabase
     .from(DB_SCHEMA.tickets.tableName)
     .select(`
@@ -448,7 +428,6 @@ export const getTutorTickets = async (tutorId: string) => {
         parent_id
       )
     `)
-    .in('subject', tutorSubjects)
     .eq(DB_SCHEMA.tickets.columns.closed, false)
     .order(DB_SCHEMA.tickets.columns.created_at, { ascending: false });
 
@@ -484,19 +463,6 @@ export const createResponse = async (
   console.log('Creating response:', { ticketId, userId, userRole, content: content.substring(0, 50) + '...', parentId });
   
   try {
-    // First verify the user's role matches what was passed
-    const actualUserRole = await getUserType();
-    console.log('Actual user role:', actualUserRole);
-    
-    if (!actualUserRole) {
-      console.error('Failed to get user role');
-      return { error: new Error('Could not verify user role') };
-    }
-    if (actualUserRole !== userRole) {
-      console.error(`Role mismatch: expected ${userRole}, got ${actualUserRole}`);
-      return { error: new Error(`Invalid role: expected ${userRole}`) };
-    }
-
     // Get the user's profile
     const profileResult = await getProfile(userId);
     console.log('Profile lookup result:', {
@@ -521,7 +487,7 @@ export const createResponse = async (
     // Get the ticket details first
     const { data: ticket, error: ticketError } = await supabase
       .from(DB_SCHEMA.tickets.tableName)
-      .select('student_id, subject, status, closed')
+      .select('*')  // Select all fields since we need them anyway
       .eq(DB_SCHEMA.tickets.columns.id, ticketId)
       .single();
 
@@ -549,54 +515,6 @@ export const createResponse = async (
       return { error: new Error('Cannot respond to a closed ticket') };
     }
 
-    // Check permissions based on role
-    if (userRole === 'student') {
-      console.log('Checking student permissions:', {
-        ticketStudentId: ticket.student_id,
-        userId,
-        match: ticket.student_id === userId
-      });
-      
-      if (ticket.student_id !== userId) {
-        console.error('Unauthorized response attempt:', { ticketId, userId, studentId: ticket.student_id });
-        return { error: new Error('Not authorized to respond to this ticket') };
-      }
-    } else if (userRole === 'tutor') {
-      // Verify tutor has the subject
-      console.log('Checking tutor subjects for:', { tutorId: userId, ticketSubject: ticket.subject });
-      
-      const { data: tutorSubjects, error: subjectsError } = await supabase
-        .from('tutor_subjects')
-        .select('subject')
-        .eq('tutor_id', userId);
-
-      console.log('Raw tutor subjects query result:', { tutorSubjects, error: subjectsError });
-
-      if (subjectsError) {
-        console.error('Error checking tutor subjects:', subjectsError);
-        return { error: new Error('Failed to verify tutor permissions') };
-      }
-
-      const hasSubject = tutorSubjects?.some(ts => {
-        console.log('Comparing subjects:', { 
-          tutorSubject: ts.subject, 
-          ticketSubject: ticket.subject,
-          matches: ts.subject === ticket.subject 
-        });
-        return ts.subject === ticket.subject;
-      });
-      
-      if (!hasSubject) {
-        console.error('Tutor does not have the required subject:', { 
-          tutorId: userId, 
-          tutorSubjects: tutorSubjects?.map(ts => ts.subject),
-          requiredSubject: ticket.subject,
-          availableSubjects: AVAILABLE_SUBJECTS
-        });
-        return { error: new Error(`You are not authorized to respond to ${ticket.subject} tickets`) };
-      }
-    }
-
     const responseData = {
       ticket_id: ticketId,
       tutor_id: userRole === 'tutor' ? userId : null,
@@ -622,14 +540,11 @@ export const createResponse = async (
       // Check if it's a permissions error
       if (response.error.code === 'PGRST301') {
         console.error('This appears to be a permissions error. Current auth state:', {
-          userRole: actualUserRole,
+          userRole: userRole,
           userId,
           ticketOwner: ticket.student_id,
           ticketSubject: ticket.subject
         });
-        // Get current user type to help debug
-        const currentUserType = await getUserType();
-        console.log('Current user type:', currentUserType);
       }
       return { error: new Error(`Failed to create response: ${String(response.error)}`) };
     }
@@ -756,6 +671,27 @@ export const createProfile = async (
     if (error) {
       console.error('Error creating profile:', error);
       throw error;
+    }
+
+    // If this is a tutor profile and specialties were provided, create tutor subject entries
+    if (role === 'tutor' && data?.specialties && data.specialties.length > 0) {
+      const validSubjects = data.specialties.filter((s): s is Subject => 
+        AVAILABLE_SUBJECTS.includes(s as Subject)
+      );
+
+      if (validSubjects.length > 0) {
+        const { error: subjectsError } = await supabase
+          .from('tutor_subjects')
+          .insert(validSubjects.map(subject => ({
+            tutor_id: user_id,
+            subject
+          })));
+
+        if (subjectsError) {
+          console.error('Error creating tutor subjects:', subjectsError);
+          // Don't throw here as the profile was created successfully
+        }
+      }
     }
 
     console.log('Profile created successfully:', profile);

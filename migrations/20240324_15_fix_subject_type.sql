@@ -1,12 +1,16 @@
 -- Begin transaction
 BEGIN;
 
--- Drop policies that reference the subject column
+-- Drop ALL existing policies
 DROP POLICY IF EXISTS "responses_select_policy" ON responses;
 DROP POLICY IF EXISTS "responses_insert_policy" ON responses;
 DROP POLICY IF EXISTS "ticket_visibility" ON tickets;
 DROP POLICY IF EXISTS "Users can view their own tickets" ON tickets;
 DROP POLICY IF EXISTS "Students can view their own tickets" ON tickets;
+DROP POLICY IF EXISTS "Students can update their own tickets" ON tickets;
+DROP POLICY IF EXISTS "Responses are viewable by ticket participants" ON responses;
+DROP POLICY IF EXISTS "Students can respond to their own tickets" ON responses;
+DROP POLICY IF EXISTS "Users can create responses on accessible tickets" ON responses;
 
 -- Drop the type if it exists
 DROP TYPE IF EXISTS subject;
@@ -50,7 +54,7 @@ USING (
     EXISTS (  -- Tutors can see tickets in their subjects
         SELECT 1 FROM tutor_subjects ts
         WHERE ts.tutor_id = auth.uid()
-        AND ts.subject = tickets.subject
+        AND LOWER(ts.subject::text) = LOWER(tickets.subject::text)
     )
 );
 
@@ -65,7 +69,7 @@ USING (
             EXISTS (
                 SELECT 1 FROM tutor_subjects ts
                 WHERE ts.tutor_id = auth.uid() 
-                AND ts.subject = tickets.subject
+                AND LOWER(ts.subject::text) = LOWER(tickets.subject::text)
             )
         )
     )
@@ -84,7 +88,7 @@ WITH CHECK (
             (p.role = 'tutor' AND EXISTS (
                 SELECT 1 FROM tutor_subjects ts
                 WHERE ts.tutor_id = auth.uid() 
-                AND ts.subject = t.subject
+                AND LOWER(ts.subject::text) = LOWER(t.subject::text)
             ))
         )
     )

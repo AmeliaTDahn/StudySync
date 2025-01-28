@@ -1,39 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { createProfile, updateProfile, type UserType, type Profile } from '../lib/supabase';
+import { createProfile, type UserType } from '../lib/supabase';
 
 interface ProfileFormProps {
   user: User;
   userType: UserType;
-  existingProfile?: Profile;
   onComplete?: () => void;
   onError?: (error: string | null) => void;
 }
 
-export const ProfileForm: React.FC<ProfileFormProps> = ({ 
-  user, 
-  userType, 
-  existingProfile, 
-  onComplete, 
-  onError 
-}) => {
-  const [username, setUsername] = useState(existingProfile?.username || '');
-  const [hourlyRate, setHourlyRate] = useState<number>(existingProfile?.hourly_rate || 0);
-  const [bio, setBio] = useState(existingProfile?.bio || '');
-  const [specialties, setSpecialties] = useState<string[]>(existingProfile?.specialties || []);
-  const [struggles, setStruggles] = useState<string[]>(existingProfile?.struggles || []);
+export const ProfileForm: React.FC<ProfileFormProps> = ({ user, userType, onComplete, onError }) => {
+  const [username, setUsername] = useState('');
+  const [hourlyRate, setHourlyRate] = useState<number>(0);
+  const [bio, setBio] = useState('');
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [struggles, setStruggles] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Update form fields if existingProfile changes
-  useEffect(() => {
-    if (existingProfile) {
-      setUsername(existingProfile.username);
-      setHourlyRate(existingProfile.hourly_rate || 0);
-      setBio(existingProfile.bio || '');
-      setSpecialties(existingProfile.specialties || []);
-      setStruggles(existingProfile.struggles || []);
-    }
-  }, [existingProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,50 +29,36 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         bio,
         specialties,
         struggles,
-        userType,
-        isUpdate: !!existingProfile
+        userType
       });
 
       if (!username.trim()) {
         throw new Error('Username is required');
       }
 
-      let result;
-      if (existingProfile) {
-        // Update existing profile
-        result = await updateProfile(user.id, {
-          username: username.trim(),
+      const { data, error } = await createProfile(
+        user.id,
+        username.trim(),
+        user.email!,
+        userType,
+        {
           hourly_rate: userType === 'tutor' ? hourlyRate : null,
-          bio: bio.trim() || undefined,
+          bio: bio.trim() || null,
           specialties: specialties.filter(s => s.trim()),
           struggles: struggles.filter(s => s.trim())
-        });
-      } else {
-        // Create new profile
-        result = await createProfile(
-          user.id,
-          username.trim(),
-          user.email!,
-          userType,
-          {
-            hourly_rate: userType === 'tutor' ? hourlyRate : null,
-            bio: bio.trim() || undefined,
-            specialties: specialties.filter(s => s.trim()),
-            struggles: struggles.filter(s => s.trim())
-          }
-        );
+        }
+      );
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        throw error;
       }
 
-      if (result.error) {
-        console.error('Error saving profile:', result.error);
-        throw result.error;
-      }
-
-      console.log('Profile saved successfully:', result);
+      console.log('Profile created successfully:', data);
       if (onComplete) onComplete();
     } catch (err: any) {
-      console.error('Profile save error:', err);
-      if (onError) onError(err.message || 'Failed to save profile');
+      console.error('Profile creation error:', err);
+      if (onError) onError(err.message || 'Failed to create profile');
     } finally {
       setIsSubmitting(false);
     }
@@ -204,7 +172,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         disabled={isSubmitting}
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
       >
-        {isSubmitting ? 'Saving...' : existingProfile ? 'Update Profile' : 'Create Profile'}
+        {isSubmitting ? 'Creating Profile...' : 'Create Profile'}
       </button>
     </form>
   );

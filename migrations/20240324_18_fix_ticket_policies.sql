@@ -22,10 +22,10 @@ CREATE POLICY "ticket_visibility"
 ON tickets FOR SELECT
 USING (
     student_id = auth.uid() OR  -- Students can see their own tickets
-    EXISTS (  -- Tutors can see tickets in their subjects
-        SELECT 1 FROM tutor_subjects ts
-        WHERE ts.tutor_id = auth.uid()
-        AND ts.subject::text = tickets.subject::text
+    EXISTS (  -- Tutors can see all tickets
+        SELECT 1 FROM profiles
+        WHERE user_id = auth.uid()
+        AND role = 'tutor'
     )
 );
 
