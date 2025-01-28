@@ -1,17 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Search } from 'lucide-react';
-import { 
-  supabase,
-  searchUsers,
-  type Profile,
-  type Subject,
-  AVAILABLE_SUBJECTS,
-  createOrGetConversation
-} from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import AddUserButton from '../components/add-user-button';
 import BackOnlyNav from '../components/BackOnlyNav';
 import { useAuth } from '../contexts/auth';
+import type { Profile } from '../lib/supabase';
 
 export default function TutorsPage() {
   const { user, profile } = useAuth();
@@ -25,7 +19,7 @@ export default function TutorsPage() {
         .from('profiles')
         .select('*')
         .eq('role', 'tutor');
-
+      
       if (!error && data) {
         setTutors(data);
       }
