@@ -1,0 +1,433 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+supabase.ts:33 Initializing Supabase client with URL: https://kfxlybbcdjelbzheifef.supabase.co
+supabase.ts:34 Environment variables: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.983Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.983Z #onAuthStateChange() registered callback with id 07096e5d-1e02-4003-bb89-c25fe0634a24
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_recoverAndRefresh() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_recoverAndRefresh() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_recoverAndRefresh() session is not valid
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_recoverAndRefresh() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_handleVisibilityChange()
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_onVisibilityChanged(true) visibilityState visible
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_stopAutoRefresh()
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_startAutoRefresh()
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_initialize() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_autoRefreshTokenTick() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock begin 0
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z INITIAL_SESSION callback id 07096e5d-1e02-4003-bb89-c25fe0634a24 session null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_useSession end
+2GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:17.999Z auto refresh token tick lock not available
+favicon.ico:1 
+        
+        
+       Failed to load resource: the server responded with a status of 404 (Not Found)Understand this errorAI
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.096Z #onAuthStateChange() registered callback with id 0d64af73-5f65-49d4-b963-5a46a0813590
+auth.tsx:84 Skipping route change, not initialized or loading: Object
+auth.tsx:121 Setting up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.097Z #onAuthStateChange() registered callback with id 72ad0551-e5df-4dd8-bc04-a6e47f8b1ec5
+auth.tsx:151 Initializing auth state...
+4GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.098Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z INITIAL_SESSION callback id 0d64af73-5f65-49d4-b963-5a46a0813590 session null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() end
+auth.tsx:127 Auth state changed: INITIAL_SESSION undefined
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z INITIAL_SESSION callback id 72ad0551-e5df-4dd8-bc04-a6e47f8b1ec5 session null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.099Z #_acquireLock end
+auth.tsx:154 Auth session result: Object
+auth.tsx:168 No session found
+auth.tsx:89 Handling route change: Object
+auth.tsx:98 No authenticated user, redirecting to signin
+websocket.js:39 [HMR] connected
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.772Z #unsubscribe() state change callback with id removed 0d64af73-5f65-49d4-b963-5a46a0813590
+auth.tsx:191 Cleaning up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.772Z #unsubscribe() state change callback with id removed 72ad0551-e5df-4dd8-bc04-a6e47f8b1ec5
+signin.tsx:19 SignIn page state: Object
+auth.tsx:89 Handling route change: Object
+auth.tsx:93 No redirect needed for path: /signin
+auth.tsx:121 Setting up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.772Z #onAuthStateChange() registered callback with id bb0229d6-8638-4718-9c41-84d864a9da1f
+auth.tsx:151 Initializing auth state...
+2GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.772Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #__loadSession() end
+auth.tsx:127 Auth state changed: INITIAL_SESSION undefined
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z INITIAL_SESSION callback id bb0229d6-8638-4718-9c41-84d864a9da1f session null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #getSession() session from storage null
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:18.773Z #_acquireLock end
+auth.tsx:154 Auth session result: Object
+auth.tsx:168 No session found
+signin.tsx:34 Starting authentication process: signin
+signin.tsx:51 Attempting sign in with: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.212Z #_saveSession() Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.212Z #_notifyAllSubscribers(SIGNED_IN) begin Object broadcast = true
+auth.tsx:127 Auth state changed: SIGNED_IN fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+auth.tsx:35 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+supabase.ts:611 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #_acquireLock begin -1
+signin.tsx:19 SignIn page state: Object
+auth.tsx:89 Handling route change: Object
+auth.tsx:93 No redirect needed for path: /signin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.213Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.214Z #_acquireLock end
+auth.tsx:56 Profile loaded: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.304Z #_notifyAllSubscribers(SIGNED_IN) end
+signin.tsx:19 SignIn page state: Object
+signin.tsx:22 User is authenticated, redirecting to dashboard
+auth.tsx:89 Handling route change: Object
+auth.tsx:93 No redirect needed for path: /signin
+auth.tsx:191 Cleaning up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.742Z #unsubscribe() state change callback with id removed bb0229d6-8638-4718-9c41-84d864a9da1f
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.742Z #onAuthStateChange() registered callback with id 2bf5c9ae-80cc-43b0-9408-2eb2760b62ed
+auth.tsx:89 Handling route change: Object
+auth.tsx:121 Setting up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.742Z #onAuthStateChange() registered callback with id d7de597f-89b5-4d07-850d-02c5685e7a94
+auth.tsx:151 Initializing auth state...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.743Z #_acquireLock begin -1
+2GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #__loadSession() end
+supabase.ts:611 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z INITIAL_SESSION callback id 2bf5c9ae-80cc-43b0-9408-2eb2760b62ed session Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.744Z #_acquireLock end
+connection-invitations.tsx:25 Loading invitations for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.745Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() end
+auth.tsx:127 Auth state changed: INITIAL_SESSION fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+auth.tsx:35 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+supabase.ts:611 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock end
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock end
+auth.tsx:154 Auth session result: Object
+auth.tsx:164 Session found for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+auth.tsx:35 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+supabase.ts:611 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock begin -1
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.747Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.748Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.749Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.750Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.750Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.750Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.750Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.750Z #_acquireLock end
+supabase.ts:374 Starting getTutorTickets with tutorId: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.806Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.809Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.809Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.809Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.809Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.809Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.809Z #__loadSession() end
+connection-invitations.tsx:30 Received invitations result: Object
+connection-invitations.tsx:35 Set invitations: Array(0)
+auth.tsx:56 Profile loaded: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.874Z INITIAL_SESSION callback id d7de597f-89b5-4d07-850d-02c5685e7a94 session Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.874Z #_useSession end
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.886Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.886Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.886Z #_acquireLock end
+supabase.ts:378 Auth check: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.887Z #_acquireLock end
+auth.tsx:56 Profile loaded: Object
+auth.tsx:89 Handling route change: Object
+supabase.ts:397 Tutor profile check: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.996Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.996Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.996Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.996Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.997Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.997Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.997Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.997Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.997Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:22.997Z #_acquireLock end
+supabase.ts:440 Ticket query result: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.265Z #unsubscribe() state change callback with id removed 2bf5c9ae-80cc-43b0-9408-2eb2760b62ed
+auth.tsx:191 Cleaning up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.265Z #unsubscribe() state change callback with id removed d7de597f-89b5-4d07-850d-02c5685e7a94
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.265Z #onAuthStateChange() registered callback with id ae998453-02bd-49aa-a2d2-57ffb20dbeb1
+auth.tsx:89 Handling route change: Object
+auth.tsx:121 Setting up auth subscription...
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.265Z #onAuthStateChange() registered callback with id 0f039f96-6088-4c1b-bc38-3b9f7210b7fa
+auth.tsx:151 Initializing auth state...
+4GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.266Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.267Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.267Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.267Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.267Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.267Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.267Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.326Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #__loadSession() end
+auth.tsx:127 Auth state changed: INITIAL_SESSION fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+auth.tsx:35 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+supabase.ts:611 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.327Z #_acquireLock end
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock end
+auth.tsx:154 Auth session result: Object
+auth.tsx:164 Session found for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+auth.tsx:35 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+supabase.ts:611 Fetching profile for user: fd4ffb44-7c09-4f91-ba84-bce8fb97e378
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock begin -1
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.328Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.329Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.330Z #_acquireLock end
+auth.tsx:56 Profile loaded: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.388Z INITIAL_SESSION callback id 0f039f96-6088-4c1b-bc38-3b9f7210b7fa session Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.388Z #_useSession end
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.406Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.407Z #_acquireLock end
+auth.tsx:56 Profile loaded: Object
+auth.tsx:89 Handling route change: Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.474Z INITIAL_SESSION callback id ae998453-02bd-49aa-a2d2-57ffb20dbeb1 session Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.474Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.474Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.475Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:24.476Z #_acquireLock end
+kfxlybbcdjelbzheifef.supabase.co/rest/v1/conversation_participants?select=conversation_id&user_id=eq.:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 ()Understand this errorAI
+hydration-error-info.js:63 Error getting user conversations: Object
+console.error @ hydration-error-info.js:63Understand this errorAI
+kfxlybbcdjelbzheifef.supabase.co/rest/v1/conversation_participants?select=conversation_id&user_id=eq.:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 ()Understand this errorAI
+hydration-error-info.js:63 Error getting user conversations: Object
+console.error @ hydration-error-info.js:63Understand this errorAI
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.055Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.057Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.058Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.101Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.103Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.103Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.103Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.104Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.104Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.104Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.104Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.104Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:27.104Z #_acquireLock end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.391Z #_acquireLock begin -1
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #_acquireLock lock acquired for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #_useSession begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #__loadSession() begin
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #getSession() session from storage Object
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #__loadSession() session has not expired expires_at 1738045642
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #__loadSession() end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #_useSession end
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #_acquireLock lock released for storage key sb-kfxlybbcdjelbzheifef-auth-token
+GoTrueClient.js:148 GoTrueClient@0 (2.67.3) 2025-01-28T05:27:28.392Z #_acquireLock end
+kfxlybbcdjelbzheifef.supabase.co/rest/v1/conversation_participants?select=conversation_id&user_id=eq.fd4ffb44-7c09-4f91-ba84-bce8fb97e378&conversation_id=in.%5Bobject+Object%5D:1 
+        
+        
+       Failed to load resource: the server responded with a status of 400 ()Understand this errorAI
+hydration-error-info.js:63 Error checking existing conversation: Object
+console.error @ hydration-error-info.js:63Understand this errorAI
