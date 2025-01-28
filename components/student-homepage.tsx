@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Clock, MessageSquare, BookOpen } from 'lucide-react';
 import { 
   createTicket, 
@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'next/router';
 import { User } from '@supabase/supabase-js';
 import AddUserButton from './add-user-button';
+import { useAuth } from '../contexts/auth';
 
 interface Ticket {
   id: number;
@@ -28,8 +29,7 @@ interface Ticket {
 
 const StudentHomepage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { user, profile } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTickets, setActiveTickets] = useState<Ticket[]>([]);
   const [closedTickets, setClosedTickets] = useState<Ticket[]>([]);
@@ -50,45 +50,13 @@ const StudentHomepage = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [connectedTutors, setConnectedTutors] = useState<Profile[]>([]);
 
-  useEffect(() => {
-    // Check authentication status
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/');
-      } else if (session) {
-        setUser(session.user);
-        loadUserData();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadUserData = async () => {
-    if (!user) return;
+  const loadUserData = useCallback(async (userId: string) => {
     try {
-      // Get user profile
-      const { data: profileData, error: profileError } = await getProfile(user.id);
-      if (profileError) throw profileError;
-      
-      if (!profileData) {
-        router.push('/profile');
-        return;
-      }
-
-      if (profileData.role !== 'student') {
-        router.push('/tutor');
-        return;
-      }
-
-      setProfile(profileData);
-
       // Get tickets
-      const { data: ticketData, error: ticketError } = await getStudentTickets(user.id);
+      const { data: ticketData, error: ticketError } = await getStudentTickets(userId);
       if (ticketError) throw ticketError;
       
       const allTickets = ticketData || [];
-      
       setTickets(allTickets);
       
       // Separate tickets into active and closed
@@ -99,7 +67,7 @@ const StudentHomepage = () => {
 
       try {
         // Load meetings
-        const { data: meetings, error: meetingsError } = await getUserMeetings(user.id, 'student');
+        const { data: meetings, error: meetingsError } = await getUserMeetings(userId, 'student');
         if (meetingsError) {
           console.error('Error loading meetings:', meetingsError);
           return;
@@ -116,7 +84,7 @@ const StudentHomepage = () => {
           tutor_id,
           tutor_username
         `)
-        .eq('student_id', user.id);
+        .eq('student_id', userId);
 
       if (connectionsError) throw connectionsError;
       
@@ -137,33 +105,69 @@ const StudentHomepage = () => {
       console.error('Error loading user data:', err);
       setError('Failed to load user data');
     }
-  };
+  }, []);
+
+  // Use a separate effect for auth state
+  useEffect(() => {
+    const loadData = async () => {
+      // Type guard for auth state
+      const userId = user?.id;
+      if (!userId || !profile) return;
+      
+      try {
+        await loadUserData(userId);
+      } catch (err) {
+        console.error('Error in initial data load:', err);
+        setError('Failed to load initial data');
+      }
+    };
+
+    // Call it immediately
+    loadData();
+  }, [user?.id, profile, loadUserData]);
 
   const handleSubmitTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    
+    // Type guard for auth state
+    const userId = user?.id;
+    if (!userId || !profile) {
+      setError("You must be logged in to create a ticket");
+      return;
+    }
 
     if (!newTicket.subject || !newTicket.topic || !newTicket.description.trim()) {
       setError('Please fill in all fields');
       return;
     }
 
-    const { error: submitError } = await createTicket({
-      ...newTicket,
-      student_id: user.id
-    });
+    try {
+      const { error: submitError } = await createTicket(
+        userId,
+        newTicket.subject,
+        newTicket.topic,
+        newTicket.description
+      );
 
-    if (submitError) {
-      console.error('Error creating ticket:', submitError);
-      setError('Failed to create ticket. Please try again.');
-    } else {
+      if (submitError) {
+        console.error('Error creating ticket:', submitError);
+        setError('Failed to create ticket. Please try again.');
+        return;
+      }
+
+      // Reset form
       setNewTicket({
         subject: '' as Subject,
         topic: '',
         description: ''
       });
       setError('');
-      loadUserData();
+      
+      // Reload data
+      await loadUserData(userId);
+    } catch (err) {
+      console.error('Error submitting ticket:', err);
+      setError('An unexpected error occurred. Please try again.');
     }
   };
 

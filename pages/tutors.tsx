@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { User } from '@supabase/supabase-js';
 import { Search } from 'lucide-react';
 import { 
   supabase,
@@ -8,16 +7,15 @@ import {
   type Profile,
   type Subject,
   AVAILABLE_SUBJECTS,
-  createOrGetConversation,
-  getProfile
+  createOrGetConversation
 } from '../lib/supabase';
 import AddUserButton from '../components/add-user-button';
 import BackOnlyNav from '../components/BackOnlyNav';
+import { useAuth } from '../contexts/auth';
 
 const TutorsPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { user, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,42 +24,27 @@ const TutorsPage = () => {
   const [showingConnected, setShowingConnected] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/');
-      } else if (session) {
-        setUser(session.user);
-        loadUserProfile(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadUserProfile = async (userId: string) => {
-    try {
-      const { data: profileData, error: profileError } = await getProfile(userId);
-      if (profileError) throw profileError;
+    // Load initial data when auth is ready
+    const loadInitialData = async () => {
+      if (!user?.id || !profile) return;
       
-      if (!profileData) {
-        router.push('/profile');
-        return;
-      }
-
-      if (profileData.role !== 'student') {
+      if (profile.role !== 'student') {
         router.push('/tutor');
         return;
       }
 
-      setProfile(profileData);
-      await loadConnectedTutors(userId);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error loading profile:', err);
-      setError('Failed to load profile');
-      setLoading(false);
-    }
-  };
+      try {
+        await loadConnectedTutors(user.id);
+      } catch (err) {
+        console.error('Error loading initial data:', err);
+        setError('Failed to load your tutors');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, [user?.id, profile]);
 
   const loadConnectedTutors = async (userId: string) => {
     try {
@@ -85,34 +68,50 @@ const TutorsPage = () => {
       }
     } catch (err) {
       console.error('Error loading connected tutors:', err);
-      setError('Failed to load your tutors');
+      throw new Error('Failed to load your tutors');
     }
   };
 
   const handleSearch = async () => {
-    if (!profile) return;
+    if (!user?.id || !profile) {
+      setError('You must be logged in to search for tutors');
+      return;
+    }
     
     setLoading(true);
     setError(null);
 
     try {
-      // First get the IDs of tutors the student is already connected with
+      // Get IDs of tutors the student is already connected with
       const { data: connections, error: connectionsError } = await supabase
         .from('student_tutor_connections')
         .select('tutor_id')
-        .eq('student_id', user?.id);
+        .eq('student_id', user.id);
 
       if (connectionsError) throw connectionsError;
       
-      const connectedTutorIds = connections?.map(c => c.tutor_id) || [];
+      // Get IDs of tutors with pending invitations
+      const { data: pendingInvitations, error: invitationsError } = await supabase
+        .from('connection_invitations')
+        .select('to_user_id, from_user_id')
+        .or(`to_user_id.eq.${user.id},from_user_id.eq.${user.id}`)
+        .eq('status', 'pending');
 
-      // Then search for tutors, excluding the connected ones
+      if (invitationsError) throw invitationsError;
+
+      // Combine all excluded tutor IDs
+      const connectedTutorIds = connections?.map(c => c.tutor_id) || [];
+      const pendingTutorIds = pendingInvitations?.flatMap(inv => [inv.to_user_id, inv.from_user_id]) || [];
+      const excludedTutorIds = Array.from(new Set([...connectedTutorIds, ...pendingTutorIds]));
+
+      // Then search for tutors, excluding both connected ones and those with pending invitations
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'tutor')
         .ilike('username', searchQuery ? `%${searchQuery}%` : '%')
-        .not('user_id', 'in', `(${connectedTutorIds.join(',')})`);
+        .not('user_id', 'in', `(${excludedTutorIds.join(',')})`)
+        .not('user_id', 'eq', user.id); // Also exclude the current user
 
       if (error) throw error;
       setSearchResults(data || []);
@@ -125,14 +124,20 @@ const TutorsPage = () => {
     }
   };
 
-  const handleUserAdded = () => {
+  const handleUserAdded = async () => {
     // Refresh both lists
-    if (user) {
-      loadConnectedTutors(user.id);
-      handleSearch();
+    if (!user?.id) return;
+    
+    try {
+      await loadConnectedTutors(user.id);
+      await handleSearch();
+    } catch (err) {
+      console.error('Error refreshing lists:', err);
+      setError('Failed to refresh tutor lists');
     }
   };
 
+  // Show loading state while auth is initializing
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
