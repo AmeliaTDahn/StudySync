@@ -1,3 +1,4 @@
+
 -- Begin transaction
 BEGIN;
 
@@ -83,20 +84,15 @@ BEGIN
         END IF;
     END IF;
     RETURN NEW;
-
-
-        -- Create or replace the trigger
-        DROP TRIGGER IF EXISTS on_connection_invitation_update ON connection_invitations;
-        CREATE TRIGGER on_connection_invitation_update
-            AFTER UPDATE ON connection_invitations
-            FOR EACH ROW
-            EXECUTE FUNCTION handle_connection_invitation_acceptance();
-
-        -- Commit transaction
-        COMMIT;
-
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- End transaction
-COMMIT; 
+-- Create or replace the trigger
+DROP TRIGGER IF EXISTS on_connection_invitation_update ON connection_invitations;
+CREATE TRIGGER on_connection_invitation_update
+    AFTER UPDATE ON connection_invitations
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_connection_invitation_acceptance();
+
+-- Commit transaction
+COMMIT;
